@@ -24,6 +24,7 @@ var/global/mulebot_count = 0
 	control_freq = 1447
 	bot_type = MULE_BOT
 	bot_filter = RADIO_MULEBOT
+	blood_DNA = list()
 
 	suffix = ""
 
@@ -77,6 +78,9 @@ var/global/mulebot_count = 0
 			suffix = "#[mulebot_count]"
 		name = "\improper Mulebot ([suffix])"
 
+obj/machinery/bot/mulebot/bot_reset()
+	..()
+	reached_target = 0
 
 
 // attack by item
@@ -84,13 +88,8 @@ var/global/mulebot_count = 0
 // screwdriver: open/close hatch
 // cell: insert it
 // other: chance to knock rider off bot
-/obj/machinery/bot/mulebot/attackby(var/obj/item/I, var/mob/user)
-	if(istype(I,/obj/item/weapon/card/emag))
-		locked = !locked
-		user << "<span class='notice'>You [locked ? "lock" : "unlock"] the mulebot's controls!</span>"
-		flick("mulebot-emagged", src)
-		playsound(loc, 'sound/effects/sparks1.ogg', 100, 0)
-	else if(istype(I, /obj/item/weapon/card/id) || istype(I, /obj/item/device/pda))
+/obj/machinery/bot/mulebot/attackby(var/obj/item/I, var/mob/user, params)
+	if(istype(I, /obj/item/weapon/card/id) || istype(I, /obj/item/device/pda))
 		if(toggle_lock(user))
 			user << "<span class='notice'>Controls [(locked ? "locked" : "unlocked")].</span>"
 
@@ -137,16 +136,22 @@ var/global/mulebot_count = 0
 		..()
 	return
 
+/obj/machinery/bot/mulebot/emag_act(mob/user as mob)
+	locked = !locked
+	user << "<span class='notice'>You [locked ? "lock" : "unlock"] the mulebot's controls!</span>"
+	flick("mulebot-emagged", src)
+	playsound(loc, 'sound/effects/sparks1.ogg', 100, 0)
 
 /obj/machinery/bot/mulebot/ex_act(var/severity)
 	unload(0)
 	switch(severity)
+		if(1)
+			qdel(src)
 		if(2)
 			for(var/i = 1; i < 3; i++)
 				wires.RandomCut()
 		if(3)
 			wires.RandomCut()
-	..()
 	return
 
 /obj/machinery/bot/mulebot/bullet_act()
@@ -236,7 +241,7 @@ var/global/mulebot_count = 0
 
 	//user << browse("<HEAD><TITLE>M.U.L.E. Mk. III [suffix ? "([suffix])" : ""]</TITLE></HEAD>[dat]", "window=mulebot;size=350x500")
 	//onclose(user, "mulebot")
-	var/datum/browser/popup = new(user, "mulebot", "M.U.L.E. Mk. V [suffix ? "([suffix])" : ""]", 350, 500)
+	var/datum/browser/popup = new(user, "mulebot", "M.U.L.E. Mk. V [suffix ? "([suffix])" : ""]", 350, 550)
 	popup.set_content(dat)
 	popup.set_title_image(user.browse_rsc_icon(icon, icon_state))
 	popup.open()
@@ -320,7 +325,7 @@ var/global/mulebot_count = 0
 
 			if("setid")
 				refresh=0
-				var/new_id = copytext(sanitize(input("Enter new bot ID", "Mulebot [suffix ? "([suffix])" : ""]", suffix) as text|null),1,MAX_NAME_LEN)
+				var/new_id = stripped_input(usr, "Enter new bot ID", "Mulebot [suffix ? "([suffix])" : ""]", suffix, MAX_NAME_LEN)
 				refresh=1
 				if(new_id)
 					suffix = new_id
@@ -329,7 +334,7 @@ var/global/mulebot_count = 0
 
 			if("sethome")
 				refresh=0
-				var/new_home = input("Enter new home tag", "Mulebot [suffix ? "([suffix])" : ""]", home_destination) as text|null
+				var/new_home = stripped_input(usr, "Enter new home tag", "Mulebot [suffix ? "([suffix])" : ""]", home_destination)
 				refresh=1
 				if(new_home)
 					home_destination = new_home
@@ -514,10 +519,9 @@ var/global/mulebot_count = 0
 		if(num_steps)
 			process_bot()
 			num_steps--
-			spawn(0)
-				for(var/i=num_steps,i>0,i--)
-					sleep(2)
-					process_bot()
+			for(var/i=num_steps,i>0,i--)
+				sleep(2)
+				process_bot()
 
 	if(refresh) updateDialog()
 
@@ -530,8 +534,8 @@ var/global/mulebot_count = 0
 			return
 		if(BOT_LOADING)		// loading/unloading
 			return
-		if(BOT_DELIVER,BOT_GO_HOME,BOT_BLOCKED)		// navigating to deliver,home, or blocked
 
+		if(BOT_DELIVER,BOT_GO_HOME,BOT_BLOCKED)		// navigating to deliver,home, or blocked
 			if(loc == target)		// reached target
 				at_target()
 				return
@@ -551,6 +555,7 @@ var/global/mulebot_count = 0
 
 					if(bloodiness)
 						var/obj/effect/decal/cleanable/blood/tracks/B = new(loc)
+						B.blood_DNA |= blood_DNA.Copy()
 						var/newdir = get_dir(next, loc)
 						if(newdir == dir)
 							B.dir = newdir
@@ -744,7 +749,8 @@ var/global/mulebot_count = 0
 // called from mob/living/carbon/human/Crossed()
 // when mulebot is in the same loc
 /obj/machinery/bot/mulebot/proc/RunOver(var/mob/living/carbon/human/H)
-	visible_message("<span class='danger'>[src] drives over [H]!</span>")
+	H.visible_message("<span class='danger'>[src] drives over [H]!</span>", \
+					"<span class='userdanger'>[src] drives over you!<span>")
 	playsound(loc, 'sound/effects/splat.ogg', 50, 1)
 
 	var/damage = rand(5,15)
@@ -756,9 +762,8 @@ var/global/mulebot_count = 0
 	H.apply_damage(0.5*damage, BRUTE, "r_arm")
 
 	var/obj/effect/decal/cleanable/blood/B = new(loc)
-	B.blood_DNA = list()
 	B.blood_DNA[H.dna.unique_enzymes] = H.dna.blood_type
-
+	blood_DNA[H.dna.unique_enzymes] = H.dna.blood_type
 	bloodiness += 4
 
 // player on mulebot attempted to move
@@ -841,7 +846,8 @@ var/global/mulebot_count = 0
 			else
 				loaddir = 0
 			icon_state = "mulebot[(wires.MobAvoid() != null)]"
-			calc_path()
+			if(destination) // No need to calculate a path if you do not have a destination set!
+				calc_path()
 			updateDialog()
 
 	//Detects and stores current active delivery beacons.

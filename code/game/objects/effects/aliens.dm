@@ -79,7 +79,7 @@
 	healthcheck()
 
 
-/obj/structure/alien/resin/ex_act(severity)
+/obj/structure/alien/resin/ex_act(severity, target)
 	switch(severity)
 		if(1.0)
 			health -= 150
@@ -108,14 +108,12 @@
 	health -= tforce
 	healthcheck()
 
-
-/obj/structure/alien/resin/attack_hand(mob/living/user)
-	if(HULK in user.mutations)
-		user.do_attack_animation(src)
-		user.visible_message("<span class='danger'>[user] destroys [src]!</span>")
-		health = 0
-		healthcheck()
-
+/obj/structure/alien/resin/attack_hulk(mob/living/carbon/human/user)
+	..(user, 1)
+	user.do_attack_animation(src)
+	user.visible_message("<span class='danger'>[user] destroys [src]!</span>")
+	health = 0
+	healthcheck()
 
 /obj/structure/alien/resin/attack_paw(mob/user)
 	return attack_hand(user)
@@ -134,7 +132,7 @@
 	healthcheck()
 
 
-/obj/structure/alien/resin/attackby(obj/item/I, mob/living/user)
+/obj/structure/alien/resin/attackby(obj/item/I, mob/living/user, params)
 	user.changeNext_move(CLICK_CD_MELEE)
 	health -= I.force
 	playsound(loc, 'sound/effects/attackblob.ogg', 100, 1)
@@ -211,16 +209,16 @@
 			new /obj/structure/alien/weeds(T, linked_node)
 
 
-/obj/structure/alien/weeds/ex_act(severity)
+/obj/structure/alien/weeds/ex_act(severity, target)
 	qdel(src)
 
 
-/obj/structure/alien/weeds/attackby(obj/item/I, mob/user)
+/obj/structure/alien/weeds/attackby(obj/item/I, mob/user, params)
 	user.changeNext_move(CLICK_CD_MELEE)
 	if(I.attack_verb.len)
-		visible_message("<span class='danger'>[src] has been [pick(I.attack_verb)] with [I] by [user].</span>")
+		visible_message("<span class='danger'>[user] has [pick(I.attack_verb)] [src] with [I]!</span>")
 	else
-		visible_message("<span class='danger'>[src] has been attacked with [I] by [user]!</span>")
+		visible_message("<span class='danger'>[user] has attacked [src] with [I]!</span>")
 
 	var/damage = I.force / 4.0
 	if(istype(I, /obj/item/weapon/weldingtool))
@@ -253,16 +251,16 @@
 	var/turf/W = get_step(src, WEST)
 	if(!locate(/obj/structure/alien) in N.contents)
 		if(istype(N, /turf/simulated/floor))
-			src.overlays += image('icons/mob/alien.dmi', "weeds_side_s", layer=2.6, pixel_y = 32)
+			src.overlays += image('icons/mob/alien.dmi', "weeds_side_s", layer=2.11, pixel_y = 32)
 	if(!locate(/obj/structure/alien) in S.contents)
 		if(istype(S, /turf/simulated/floor))
-			src.overlays += image('icons/mob/alien.dmi', "weeds_side_n", layer=2.6, pixel_y = -32)
+			src.overlays += image('icons/mob/alien.dmi', "weeds_side_n", layer=2.11, pixel_y = -32)
 	if(!locate(/obj/structure/alien) in E.contents)
 		if(istype(E, /turf/simulated/floor))
-			src.overlays += image('icons/mob/alien.dmi', "weeds_side_w", layer=2.6, pixel_x = 32)
+			src.overlays += image('icons/mob/alien.dmi', "weeds_side_w", layer=2.11, pixel_x = 32)
 	if(!locate(/obj/structure/alien) in W.contents)
 		if(istype(W, /turf/simulated/floor))
-			src.overlays += image('icons/mob/alien.dmi', "weeds_side_e", layer=2.6, pixel_x = -32)
+			src.overlays += image('icons/mob/alien.dmi', "weeds_side_e", layer=2.11, pixel_x = -32)
 
 
 /obj/structure/alien/weeds/proc/fullUpdateWeedOverlays()
@@ -371,11 +369,11 @@
 	healthcheck()
 
 
-/obj/structure/alien/egg/attackby(obj/item/I, mob/user)
+/obj/structure/alien/egg/attackby(obj/item/I, mob/user, params)
 	if(I.attack_verb.len)
-		visible_message("<span class='danger'>[src] has been [pick(I.attack_verb)] with [I] by [user].</span>")
+		visible_message("<span class='danger'>[user] has [pick(I.attack_verb)] [src] with [I]!</span>")
 	else
-		visible_message("<span class='danger'>[src] has been attacked with [I] by [user]!</span>")
+		visible_message("<span class='danger'>[user] has attacked [src] with [I]!</span>")
 
 	var/damage = I.force / 4
 	if(istype(I, /obj/item/weapon/weldingtool))

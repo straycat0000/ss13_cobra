@@ -2,15 +2,22 @@
 	name = "Optical Meson Scanner"
 	desc = "Used by engineering and mining staff to see basic structural and terrain layouts through walls, regardless of lighting condition."
 	icon_state = "meson"
-	item_state = "glasses"
+	item_state = "meson"
 	origin_tech = "magnets=2;engineering=2"
 	darkness_view = 1
 	vision_flags = SEE_TURFS
 	invis_view = SEE_INVISIBLE_MINIMUM
 
+/obj/item/clothing/glasses/meson/night
+	name = "Night Vision Optical Meson Scanner"
+	desc = "An Optical Meson Scanner fitted with an amplified visible light spectrum overlay, providing greater visual clarity in darkness."
+	icon_state = "nvgmeson"
+	item_state = "nvgmeson"
+	darkness_view = 8
+
 /obj/item/clothing/glasses/science
 	name = "Science Goggles"
-	desc = "nothing"
+	desc = "A pair of snazzy goggles used to protect against chemical spills."
 	icon_state = "purple"
 	item_state = "glasses"
 
@@ -73,7 +80,7 @@
 
 /obj/item/clothing/glasses/welding
 	name = "welding goggles"
-	desc = "Protects the eyes from welders, approved by the mad scientist association."
+	desc = "Protects the eyes from welders; approved by the mad scientist association."
 	icon_state = "welding-g"
 	item_state = "welding-g"
 	action_button_name = "Toggle Welding Goggles"
@@ -126,9 +133,9 @@
 			if(M.glasses == src)
 				M.eye_blind = 3
 				M.eye_blurry = 5
-				M.disabilities |= NEARSIGHTED
+				M.disabilities |= NEARSIGHT
 				spawn(100)
-					M.disabilities &= ~NEARSIGHTED
+					M.disabilities &= ~NEARSIGHT
 		..()
 
 /obj/item/clothing/glasses/thermal/syndi	//These are now a traitor item, concealed as mesons.	-Pete
@@ -145,6 +152,6 @@
 
 /obj/item/clothing/glasses/thermal/eyepatch
 	name = "Optical Thermal Eyepatch"
-	desc = "An eyepatch with built-in thermal optics"
+	desc = "An eyepatch with built-in thermal optics."
 	icon_state = "eyepatch"
 	item_state = "eyepatch"

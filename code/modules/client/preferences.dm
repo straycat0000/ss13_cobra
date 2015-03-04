@@ -2,22 +2,20 @@
 
 var/list/preferences_datums = list()
 
-#define IS_MODE_COMPILED(MODE) (ispath(text2path("/datum/game_mode/"+(MODE))))
-
 var/global/list/special_roles = list( //keep synced with the defines BE_* in setup.dm
 //some autodetection here.
-	"traitor" = IS_MODE_COMPILED("traitor"),             // 0
-	"operative" = IS_MODE_COMPILED("nuclear"),           // 1
-	"changeling" = IS_MODE_COMPILED("changeling"),       // 2
-	"wizard" = IS_MODE_COMPILED("wizard"),               // 3
-	"malf AI" = IS_MODE_COMPILED("malfunction"),         // 4
-	"revolutionary" = IS_MODE_COMPILED("revolution"),    // 5
-	"alien" = 1, //always show                			 // 6
-	"pAI candidate" = 1,                                 // 7
-	"cultist" = IS_MODE_COMPILED("cult"),                // 8
-	"blob" = IS_MODE_COMPILED("blob"),					 // 9
-	"monkey" = IS_MODE_COMPILED("monkey"),				// 10
-	"gangster" = IS_MODE_COMPILED("gang")				// 11
+	"traitor" = /datum/game_mode/traitor,			//0
+	"operative" = /datum/game_mode/nuclear,			//1
+	"changeling" = /datum/game_mode/changeling,		//2
+	"wizard" = /datum/game_mode/wizard,				//3
+	"malf AI" = /datum/game_mode/malfunction,		//4
+	"revolutionary" = /datum/game_mode/revolution,	//5
+	"alien",										//6
+	"pAI",											//7
+	"cultist" = /datum/game_mode/cult,				//8
+	"blob" = /datum/game_mode/blob,					//9
+	"monkey" = /datum/game_mode/monkey,				//10
+	"gangster" = /datum/game_mode/gang				//11
 )
 
 
@@ -39,6 +37,7 @@ datum/preferences
 	var/UI_style = "Midnight"
 	var/toggles = TOGGLES_DEFAULT
 	var/ghost_form = "ghost"
+	var/allow_midround_antag = 1
 
 	//character preferences
 	var/real_name						//our character's name
@@ -49,6 +48,7 @@ datum/preferences
 	var/blood_type = "A+"				//blood type (not-chooseable)
 	var/underwear = "Nude"				//underwear type
 	var/undershirt = "Nude"				//undershirt type
+	var/socks = "Nude"					//socks type
 	var/backbag = 2						//backpack type
 	var/hair_style = "Bald"				//Hair type
 	var/hair_color = "000"				//Hair color
@@ -178,6 +178,7 @@ datum/preferences
 				dat += "<b>Skin Tone:</b><BR><a href='?_src_=prefs;preference=s_tone;task=input'>[skin_tone]</a><BR>"
 				dat += "<b>Underwear:</b><BR><a href ='?_src_=prefs;preference=underwear;task=input'>[underwear]</a><BR>"
 				dat += "<b>Undershirt:</b><BR><a href ='?_src_=prefs;preference=undershirt;task=input'>[undershirt]</a><BR>"
+				dat += "<b>Socks:</b><BR><a href ='?_src_=prefs;preference=socks;task=input'>[socks]</a><BR>"
 				dat += "<b>Backpack:</b><BR><a href ='?_src_=prefs;preference=bag;task=input'>[backbaglist[backbag]]</a><BR>"
 
 
@@ -223,8 +224,9 @@ datum/preferences
 				dat += "<b>Ghost ears:</b> <a href='?_src_=prefs;preference=ghost_ears'>[(toggles & CHAT_GHOSTEARS) ? "Nearest Creatures" : "All Speech"]</a><br>"
 				dat += "<b>Ghost sight:</b> <a href='?_src_=prefs;preference=ghost_sight'>[(toggles & CHAT_GHOSTSIGHT) ? "Nearest Creatures" : "All Emotes"]</a><br>"
 				dat += "<b>Ghost whispers:</b> <a href='?_src_=prefs;preference=ghost_whispers'>[(toggles & CHAT_GHOSTWHISPER) ? "Nearest Creatures" : "All Speech"]</a><br>"
+				dat += "<b>Ghost pda:</b> <a href='?_src=prefs;preference=ghost_pda'>[(toggles & CHAT_GHOSTPDA) ? "Nearest Creatures" : "All Messages"]</a><br>"
 				dat += "<b>Pull requests:</b> <a href='?_src_=prefs;preference=pull_requests'>[(toggles & CHAT_PULLR) ? "Yes" : "No"]</a><br>"
-
+				dat += "<b>Midround Antagonist:</b> <a href='?_src_=prefs;preference=allow_midround_antag'>[(toggles & MIDROUND_ANTAG) ? "Yes" : "No"]</a><br>"
 				if(config.allow_Metadata)
 					dat += "<b>OOC Notes:</b> <a href='?_src_=prefs;preference=metadata;task=input'> Edit </a><br>"
 
@@ -246,17 +248,23 @@ datum/preferences
 				dat += "<h2>Antagonist Settings</h2>"
 
 				if(jobban_isbanned(user, "Syndicate"))
-					dat += "<b>You are banned from antagonist roles.</b>"
+					dat += "<font color=red><b>You are banned from antagonist roles.</b></font>"
 					src.be_special = 0
+
 				else
 					var/n = 0
 					for (var/i in special_roles)
-						if(special_roles[i]) //if mode is available on the server
-							if(jobban_isbanned(user, i))
-								dat += "<b>Be [i]:</b> <font color=red><b>\[BANNED]</b></font><br>"
-							else if(i == "pai candidate")
-								if(jobban_isbanned(user, "pAI"))
-									dat += "<b>Be [i]:</b> <font color=red><b>\[BANNED]</b></font><br>"
+						if(jobban_isbanned(user, i))
+							dat += "<b>Be [i]:</b> <font color=red><b>\[BANNED]</b></font><br>"
+						else
+							var/days_remaining = null
+							if(config.use_age_restriction_for_jobs && ispath(special_roles[i])) //If it's a game mode antag, check if the player meets the minimum age
+								var/mode_path = special_roles[i]
+								var/datum/game_mode/temp_mode = new mode_path
+								days_remaining = temp_mode.get_remaining_days(user.client)
+
+							if(days_remaining)
+								dat += "<b>Be [i]:</b> <font color=red> \[IN [days_remaining] DAYS]</font><br>"
 							else
 								dat += "<b>Be [i]:</b> <a href='?_src_=prefs;preference=be_special;num=[n]'>[src.be_special&(1<<n) ? "Yes" : "No"]</a><br>"
 						n++
@@ -272,12 +280,12 @@ datum/preferences
 		dat += "</center>"
 
 		//user << browse(dat, "window=preferences;size=560x560")
-		var/datum/browser/popup = new(user, "preferences", "<div align='center'>Character Setup</div>", 580, 620)
+		var/datum/browser/popup = new(user, "preferences", "<div align='center'>Character Setup</div>", 640, 680)
 		popup.set_content(dat)
 		popup.open(0)
 
 	proc/SetChoices(mob/user, limit = 17, list/splitJobs = list("Chief Engineer"), widthPerColumn = 295, height = 620)
-		if(!job_master)	return
+		if(!SSjob)	return
 
 		//limit - The amount of jobs allowed per column. Defaults to 17 to make it look nice.
 		//splitJobs - Allows you split the table by job. You can make different tables for each department by including their heads. Defaults to CE to make it look nice.
@@ -298,7 +306,7 @@ datum/preferences
 		//The job before the current job. I only use this to get the previous jobs color when I'm filling in blank rows.
 		var/datum/job/lastJob
 
-		for(var/datum/job/job in job_master.occupations)
+		for(var/datum/job/job in SSjob.occupations)
 
 			index += 1
 			if((index >= limit) || (job.title in splitJobs))
@@ -321,7 +329,7 @@ datum/preferences
 				var/available_in_days = job.available_in_days(user.client)
 				HTML += "<font color=red>[rank]</font></td><td><font color=red> \[IN [(available_in_days)] DAYS\]</font></td></tr>"
 				continue
-			if((job_civilian_low & ASSISTANT) && (rank != "Assistant"))
+			if((job_civilian_low & ASSISTANT) && (rank != "Assistant") && !jobban_isbanned(user, "Assistant"))
 				HTML += "<font color=orange>[rank]</font></td><td></td></tr>"
 				continue
 			if(config.enforce_human_authority && (rank in command_positions) && user.client.prefs.pref_species.id != "human")
@@ -451,9 +459,9 @@ datum/preferences
 		return 0
 
 	proc/UpdateJobPreference(mob/user, role, desiredLvl)
-		if(!job_master)
+		if(!SSjob)
 			return
-		var/datum/job/job = job_master.GetJob(role)
+		var/datum/job/job = SSjob.GetJob(role)
 
 		if(!job)
 			user << browse(null, "window=mob_occupation")
@@ -565,6 +573,8 @@ datum/preferences
 						underwear = random_underwear(gender)
 					if("undershirt")
 						undershirt = random_undershirt(gender)
+					if("socks")
+						socks = random_socks(gender)
 					if("eyes")
 						eye_color = random_eye_color()
 					if("s_tone")
@@ -669,6 +679,15 @@ datum/preferences
 						if(new_undershirt)
 							undershirt = new_undershirt
 
+					if("socks")
+						var/new_socks
+						if(gender == MALE)
+							new_socks = input(user, "Choose your character's socks:", "Character Preference") as null|anything in socks_m
+						else
+							new_socks = input(user, "Choose your character's socks:", "Character Preference") as null|anything in socks_f
+						if(new_socks)
+							socks = new_socks
+
 					if("eyes")
 						var/new_eyes = input(user, "Choose your character's eye colour:", "Character Preference") as color|null
 						if(new_eyes)
@@ -724,6 +743,7 @@ datum/preferences
 							gender = MALE
 						underwear = random_underwear(gender)
 						undershirt = random_undershirt(gender)
+						socks = random_socks(gender)
 						facial_hair_style = random_facial_hair_style(gender)
 						hair_style = random_hair_style(gender)
 
@@ -768,8 +788,14 @@ datum/preferences
 					if("ghost_whispers")
 						toggles ^= CHAT_GHOSTWHISPER
 
+					if("ghost_pda")
+						toggles ^= CHAT_GHOSTPDA
+
 					if("pull_requests")
 						toggles ^= CHAT_PULLR
+
+					if("allow_midround_antag")
+						toggles ^= MIDROUND_ANTAG
 
 					if("save")
 						save_preferences()
@@ -832,6 +858,7 @@ datum/preferences
 		character.facial_hair_style = facial_hair_style
 		character.underwear = underwear
 		character.undershirt = undershirt
+		character.socks = socks
 
 		if(backbag > 3 || backbag < 1)
 			backbag = 1 //Same as above

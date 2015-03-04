@@ -25,6 +25,19 @@ Note: Must be placed west/left of and R&D console to function.
 	var/adamantine_amount = 0.0
 	var/efficiency_coeff
 
+	var/list/categories = list(
+								"Power Designs",
+								"Medical Designs",
+								"Bluespace Designs",
+								"Stock Parts",
+								"Equipement",
+								"Mining Designs",
+								"Electronics",
+								"Weapons",
+								"Ammo",
+								"Firing Pins"
+								)
+
 	reagents = new()
 
 
@@ -74,14 +87,14 @@ Note: Must be placed west/left of and R&D console to function.
 			A = uranium_amount
 		if("$diamond")
 			A = diamond_amount
-		if("$clown")
+		if("$bananium")
 			A = clown_amount
 		else
 			A = reagents.get_reagent_amount(M)
 	A = A / max(1, (being_built.materials[M]/efficiency_coeff))
 	return A
 
-/obj/machinery/r_n_d/protolathe/attackby(var/obj/item/O as obj, var/mob/user as mob)
+/obj/machinery/r_n_d/protolathe/attackby(var/obj/item/O as obj, var/mob/user as mob, params)
 	if (shocked)
 		shock(user,50)
 	if (default_deconstruction_screwdriver(user, "protolathe_t", "protolathe", O))

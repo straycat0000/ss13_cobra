@@ -114,7 +114,7 @@
 
 // attach a wire to a power machine - leads from the turf you are standing on
 //almost never called, overwritten by all power machines but terminal and generator
-/obj/machinery/power/attackby(obj/item/weapon/W, mob/user)
+/obj/machinery/power/attackby(obj/item/weapon/W, mob/user, params)
 
 	if(istype(W, /obj/item/stack/cable_coil))
 
@@ -128,7 +128,7 @@
 		if(get_dist(src, user) > 1)
 			return
 
-		coil.turf_place(T, user)
+		coil.place_turf(T, user)
 		return
 	else
 		..()
@@ -217,7 +217,7 @@
 
 
 // rebuild all power networks from scratch - only called at world creation or by the admin verb
-/proc/makepowernets()
+/datum/subsystem/power/proc/makepowernets()
 	for(var/datum/powernet/PN in powernets)
 		del(PN)
 	powernets.Cut()
@@ -356,10 +356,10 @@
 ////////////////////////////////////////////
 
 /datum/powernet/New()
-	powernets += src
+	SSpower.powernets += src
 
 /datum/powernet/Destroy()
-	powernets -= src
+	SSpower.powernets -= src
 
 /datum/powernet/proc/is_empty()
 	return !cables.len && !nodes.len

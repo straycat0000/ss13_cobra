@@ -112,14 +112,8 @@
 	return
 
 
-/obj/machinery/power/am_control_unit/ex_act(severity)
-	switch(severity)
-		if(1.0)
-			stability -= 60
-		if(2.0)
-			stability -= 40
-		if(3.0)
-			stability -= 20
+/obj/machinery/power/am_control_unit/ex_act(severity, target)
+	stability -= (80 - (severity * 20))
 	check_stability()
 	return
 
@@ -143,7 +137,7 @@
 	//No other icons for it atm
 
 
-/obj/machinery/power/am_control_unit/attackby(obj/item/W, mob/user)
+/obj/machinery/power/am_control_unit/attackby(obj/item/W, mob/user, params)
 	if(!istype(W) || !user) return
 	if(istype(W, /obj/item/weapon/wrench))
 		if(!anchored)

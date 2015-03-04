@@ -17,6 +17,9 @@
 								//anything with a (non-null) holidayID which does not match holiday, cannot run.
 	var/wizardevent = 0
 
+	var/alertadmins = 1			//should we let the admins know this event is firing
+								//should be disabled on events that fire a lot
+
 /datum/round_event_control/wizard
 	wizardevent = 1
 
@@ -110,11 +113,11 @@
 //which should be the only place it's referenced.
 //Called when start(), announce() and end() has all been called.
 /datum/round_event/proc/kill()
-	events.running -= src
+	SSevent.running -= src
 
 
 //Sets up the event then adds the event to the the list of running events
 /datum/round_event/New()
 	setup()
-	events.running += src
+	SSevent.running += src
 	return ..()

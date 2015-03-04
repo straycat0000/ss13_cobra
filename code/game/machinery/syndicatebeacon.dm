@@ -122,7 +122,7 @@
 	if(surplus() < 1500)
 		if(user) user << "<span class='notice'>The connected wire doesn't have enough current.</span>"
 		return
-	for(var/obj/machinery/singularity/singulo in world)
+	for(var/obj/singularity/singulo in world)
 		if(singulo.z == z)
 			singulo.target = src
 	icon_state = "[icontype]1"
@@ -133,7 +133,7 @@
 
 
 /obj/machinery/power/singularity_beacon/proc/Deactivate(mob/user = null)
-	for(var/obj/machinery/singularity/singulo in world)
+	for(var/obj/singularity/singulo in world)
 		if(singulo.target == src)
 			singulo.target = null
 	icon_state = "[icontype]0"
@@ -154,7 +154,7 @@
 		return
 
 
-/obj/machinery/power/singularity_beacon/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/machinery/power/singularity_beacon/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(istype(W,/obj/item/weapon/screwdriver))
 		if(active)
 			user << "<span class='danger'>You need to deactivate the beacon first!</span>"

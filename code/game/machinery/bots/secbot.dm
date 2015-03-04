@@ -32,7 +32,7 @@
 		/obj/item/weapon/gun/energy/laser/bluetag,\
 		/obj/item/weapon/gun/energy/laser/redtag,\
 		/obj/item/weapon/gun/energy/laser/practice,\
-		/obj/item/weapon/melee/telebaton,\
+		/obj/item/weapon/melee/classic_baton/telescopic,\
 		/obj/item/weapon/gun/energy/kinetic_accelerator)
 
 
@@ -155,7 +155,7 @@ Auto Patrol: []"},
 			updateUsrDialog()
 
 
-/obj/machinery/bot/secbot/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/machinery/bot/secbot/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/device/pda))
 		if(allowed(user) && !open && !emagged)
 			locked = !locked
@@ -218,8 +218,7 @@ Auto Patrol: []"},
 						icon_state = "secbot[on]"
 					var/mob/living/carbon/M = target
 					if(istype(M, /mob/living/carbon/human))
-						if( M.stuttering < 5 && !(HULK in M.mutations) )
-							M.stuttering = 5
+						M.stuttering = 5
 						M.Stun(5)
 						M.Weaken(5)
 					else
@@ -230,8 +229,8 @@ Auto Patrol: []"},
 					if(declare_arrests)
 						var/area/location = get_area(src)
 						speak("[arrest_type ? "Detaining" : "Arresting"] level [threatlevel] scumbag <b>[target]</b> in [location].", radio_frequency)
-					target.visible_message("<span class='danger'>[target] has been stunned by [src]!</span>",\
-											"<span class='userdanger'>[target] has been stunned by [src]!</span>")
+					target.visible_message("<span class='danger'>[src] has stunned [target]!</span>",\
+											"<span class='userdanger'>[src] has stunned [target]!</span>")
 
 					mode = BOT_PREP_ARREST
 					anchored = 1
@@ -387,7 +386,7 @@ Auto Patrol: []"},
 
 //Secbot Construction
 
-/obj/item/clothing/head/helmet/attackby(var/obj/item/device/assembly/signaler/S, mob/user as mob)
+/obj/item/clothing/head/helmet/attackby(var/obj/item/device/assembly/signaler/S, mob/user as mob, params)
 	..()
 	if(!issignaler(S))
 		..()
@@ -406,7 +405,7 @@ Auto Patrol: []"},
 	else
 		return
 
-/obj/item/weapon/secbot_assembly/attackby(obj/item/I, mob/user)
+/obj/item/weapon/secbot_assembly/attackby(obj/item/I, mob/user, params)
 	..()
 	if(istype(I, /obj/item/weapon/weldingtool))
 		if(!build_step)

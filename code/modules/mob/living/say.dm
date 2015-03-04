@@ -112,14 +112,28 @@ var/list/department_radio_keys = list(
 	if(!message || message == "")
 		return
 
+	var/italics = 0
 	var/message_range = 7
 	var/radio_return = radio(message, message_mode)
 	if(radio_return & NOPASS) //There's a whisper() message_mode, no need to continue the proc if that is called
 		return
 	if(radio_return & ITALICS)
-		message = "<i>[message]</i>"
+		italics = 1
 	if(radio_return & REDUCE_RANGE)
 		message_range = 1
+
+	//No screams in space, unless you're next to someone.
+	var/turf/T = get_turf(src)
+	var/datum/gas_mixture/environment = T.return_air()
+	var/pressure = (environment)? environment.return_pressure() : 0
+	if(pressure < SOUND_MINIMUM_PRESSURE)
+		message_range = 1
+
+	if(pressure < ONE_ATMOSPHERE*0.4) //Thin air, let's italicise the message
+		italics = 1
+
+	if(italics)
+		message = "<i>[message]</i>"
 
 	send_speech(message, message_range, src, bubble_type)
 
@@ -147,7 +161,7 @@ var/list/department_radio_keys = list(
 	var/list/listening = get_hearers_in_view(message_range, source)
 	var/list/listening_dead = list()
 	for(var/mob/M in player_list)
-		if(M.stat == DEAD && ((M.client.prefs.toggles & CHAT_GHOSTEARS) || (get_dist(M, src) <= 7))&& client) // client is so that ghosts don't have to listen to mice
+		if(M.stat == DEAD && M.client && ((M.client.prefs.toggles & CHAT_GHOSTEARS) || (get_dist(M, src) <= 7)) && client) // client is so that ghosts don't have to listen to mice
 			listening_dead |= M
 
 	listening -= listening_dead //so ghosts dont hear stuff twice
@@ -196,7 +210,7 @@ var/list/department_radio_keys = list(
 	if(!message)
 		return 0
 
-	if(sdisabilities & MUTE)
+	if(disabilities & MUTE)
 		return 0
 
 	if(is_muzzled())
@@ -246,6 +260,11 @@ var/list/department_radio_keys = list(
 
 	if(stuttering)
 		message = stutter(message)
+
+	if(slurring)
+		message = slur(message)
+
+	message = capitalize(message)
 
 	return message
 

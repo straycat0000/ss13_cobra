@@ -28,6 +28,10 @@
 	origin_tech = "materials=1;engineering=1"
 	attack_verb = list("bashed", "battered", "bludgeoned", "whacked")
 
+/obj/item/weapon/wrench/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is beating \himself to death with the [src.name]! It looks like \he's trying to commit suicide.</span>")
+	playsound(loc, 'sound/weapons/genhit.ogg', 50, 1, -1)
+	return (BRUTELOSS)
 
 /*
  * Screwdriver
@@ -86,7 +90,7 @@
 	if(!istype(M))	return ..()
 	if(user.zone_sel.selecting != "eyes" && user.zone_sel.selecting != "head")
 		return ..()
-	if((CLUMSY in user.mutations) && prob(50))
+	if(user.disabilities & CLUMSY && prob(50))
 		M = user
 	return eyestab(M,user)
 
@@ -119,10 +123,17 @@
 		user.visible_message("<span class='notice'>[user] cuts [C]'s restraints with [src]!</span>")
 		qdel(C.handcuffed)
 		C.handcuffed = null
+		if(C.buckled && C.buckled.buckle_requires_restraints)
+			C.buckled.unbuckle_mob()
 		C.update_inv_handcuffed(0)
 		return
 	else
 		..()
+
+/obj/item/weapon/wirecutters/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is cutting at \his arteries with the [src.name]! It looks like \he's trying to commit suicide.</span>")
+	playsound(loc, 'sound/items/Wirecutter.ogg', 50, 1, -1)
+	return (BRUTELOSS)
 
 /*
  * Welding Tool
@@ -175,7 +186,7 @@
 	user << "It contains [get_fuel()] unit\s of fuel out of [max_fuel]."
 
 
-/obj/item/weapon/weldingtool/attackby(obj/item/I, mob/user)
+/obj/item/weapon/weldingtool/attackby(obj/item/I, mob/user, params)
 	if(istype(I, /obj/item/weapon/screwdriver))
 		flamethrower_screwdriver(I, user)
 	if(istype(I, /obj/item/stack/rods))
@@ -204,15 +215,15 @@
 			force = 3
 			damtype = "brute"
 			update_icon()
-			processing_objects.Remove(src)
+			SSobj.processing.Remove(src)
 			return
 	//Welders left on now use up fuel, but lets not have them run out quite that fast
 		if(1)
 			force = 15
 			damtype = "fire"
-			update_icon()
 			if(prob(5))
 				remove_fuel(1)
+			update_icon()
 
 	//This is to start fires. process() is only called if the welder is on.
 	var/turf/location = loc
@@ -283,14 +294,12 @@
 /obj/item/weapon/weldingtool/proc/check_fuel(mob/user)
 	if(get_fuel() <= 0 && welding)
 		toggle(user, 1)
-
+		update_icon()
 		//mob icon update
 		if(ismob(loc))
 			var/mob/M = loc
-			if(M.r_hand == src)
-				M.update_inv_r_hand(0)
-			else if(M.l_hand == src)
-				M.update_inv_l_hand(0)
+			M.update_inv_r_hand(0)
+			M.update_inv_l_hand(0)
 
 		return 0
 	return 1
@@ -302,13 +311,13 @@
 		return
 	welding = !welding
 	if(welding)
-		if(remove_fuel(1))
+		if(get_fuel() >= 1)
 			user << "<span class='notice'>You switch [src] on.</span>"
 			force = 15
 			damtype = "fire"
 			hitsound = 'sound/items/welder.ogg'
 			icon_state = "welder1"
-			processing_objects.Add(src)
+			SSobj.processing |= src
 		else
 			user << "<span class='notice'>You need more fuel.</span>"
 			welding = 0
@@ -321,7 +330,7 @@
 		damtype = "brute"
 		hitsound = "swing_hit"
 		icon_state = "welder"
-		welding = 0
+
 
 
 //Decides whether or not to damage a player's eyes based on what they're wearing as protection
@@ -351,14 +360,14 @@
 		user << "<span class='warning'>Your eyes are really starting to hurt. This can't be good for you!</span>"
 	if (prob(user.eye_stat - 25 + 1))
 		user << "<span class='warning'>You go blind!</span>"
-		user.sdisabilities |= BLIND
+		user.disabilities |= BLIND
 	else if(prob(user.eye_stat - 15 + 1))
 		user << "<span class='warning'>You go blind!</span>"
 		user.eye_blind = 5
 		user.eye_blurry = 5
-		user.disabilities |= NEARSIGHTED
+		user.disabilities |= NEARSIGHT
 		spawn(100)
-			user.disabilities &= ~NEARSIGHTED
+			user.disabilities &= ~NEARSIGHT
 
 /obj/item/weapon/weldingtool/proc/flamethrower_screwdriver(obj/item/I, mob/user)
 	if(welding)
@@ -416,7 +425,6 @@
 	m_amt = 70
 	g_amt = 120
 	origin_tech = "engineering=4;plasmatech=3"
-	icon_state = "ewelder"
 	var/last_gen = 0
 
 
@@ -447,6 +455,11 @@
 	m_amt = 50
 	origin_tech = "engineering=1"
 	attack_verb = list("attacked", "bashed", "battered", "bludgeoned", "whacked")
+
+/obj/item/weapon/crowbar/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is beating \himself to death with the [src.name]! It looks like \he's trying to commit suicide.</span>")
+	playsound(loc, 'sound/weapons/genhit.ogg', 50, 1, -1)
+	return (BRUTELOSS)
 
 /obj/item/weapon/crowbar/red
 	icon = 'icons/obj/items.dmi'

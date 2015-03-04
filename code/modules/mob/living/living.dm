@@ -1,14 +1,145 @@
+/* I am informed this was added by Giacom to reduce mob-stacking in escape pods.
+It's sorta problematic atm due to the shuttle changes I am trying to do
+Sorry Giacom. Please don't be mad :(
 /mob/living/Life()
 	..()
-	var/area/cur_area = get_area(loc)
-	if(cur_area)
-		cur_area.mob_activate(src)
+	var/area/A = get_area(loc)
+	if(A && A.push_dir)
+		push_mob_back(src, A.push_dir)
+*/
+
+
+/mob/living/New()
+	. = ..()
+	generateStaticOverlay()
+	if(staticOverlays.len)
+		for(var/mob/living/simple_animal/drone/D in player_list)
+			if(D && D.seeStatic)
+				if(D.staticChoice in staticOverlays)
+					D.staticOverlays |= staticOverlays[D.staticChoice]
+					D.client.images |= staticOverlays[D.staticChoice]
+				else //no choice? force static
+					D.staticOverlays |= staticOverlays["static"]
+					D.client.images |= staticOverlays["static"]
+
 
 /mob/living/Destroy()
-//	if(mind)
-//		mind.current = null
-	..()
+	. = ..()
+
+	for(var/mob/living/simple_animal/drone/D in player_list)
+		for(var/image/I in staticOverlays)
+			D.staticOverlays.Remove(I)
+			D.client.images.Remove(I)
+			del(I)
+	staticOverlays.len = 0
+
 	del(src)
+
+
+/mob/living/proc/generateStaticOverlay()
+	staticOverlays.Add(list("static", "blank", "letter"))
+	var/image/staticOverlay = image(getStaticIcon(new/icon(icon,icon_state)), loc = src)
+	staticOverlay.override = 1
+	staticOverlays["static"] = staticOverlay
+
+	staticOverlay = image(getBlankIcon(new/icon(icon, icon_state)), loc = src)
+	staticOverlay.override = 1
+	staticOverlays["blank"] = staticOverlay
+
+	staticOverlay = getLetterImage(src)
+	staticOverlay.override = 1
+	staticOverlays["letter"] = staticOverlay
+
+
+//Generic Bump(). Override MobBump() and ObjBump() instead of this.
+/mob/living/Bump(atom/A, yes)
+	if (buckled || !yes || now_pushing)
+		return
+	if(ismob(A))
+		var/mob/M = A
+		if(MobBump(M))
+			return
+	..()
+	if(isobj(A))
+		var/obj/O = A
+		if(ObjBump(O))
+			return
+	if(istype(A, /atom/movable))
+		var/atom/movable/AM = A
+		if(PushAM(AM))
+			return
+
+//Called when we bump onto a mob
+/mob/living/proc/MobBump(mob/M)
+	if(now_pushing)
+		return 1
+
+	//BubbleWrap: Should stop you pushing a restrained person out of the way
+	if(istype(M, /mob/living/carbon/human))
+		for(var/mob/MM in range(M, 1))
+			if( ((MM.pulling == M && ( M.restrained() && !( MM.restrained() ) && MM.stat == CONSCIOUS)) || locate(/obj/item/weapon/grab, M.grabbed_by.len)) )
+				if ( !(world.time % 5) )
+					src << "<span class='warning'>[M] is restrained, you cannot push past.</span>"
+				return 1
+			if( M.pulling == MM && ( MM.restrained() && !( M.restrained() ) && M.stat == CONSCIOUS) )
+				if ( !(world.time % 5) )
+					src << "<span class='warning'>[M] is restraining [MM], you cannot push past.</span>"
+				return 1
+
+	//switch our position with M
+	//BubbleWrap: people in handcuffs are always switched around as if they were on 'help' intent to prevent a person being pulled from being seperated from their puller
+	if((M.a_intent == "help" || M.restrained()) && (a_intent == "help" || restrained()) && M.canmove && canmove) // mutual brohugs all around!
+		now_pushing = 1
+		//TODO: Make this use Move(). we're pretty much recreating it here.
+		//it could be done by setting one of the locs to null to make Move() work, then setting it back and Move() the other mob
+		var/oldloc = loc
+		loc = M.loc
+		M.loc = oldloc
+		M.LAssailant = src
+
+		for(var/mob/living/carbon/slime/slime in view(1,M))
+			if(slime.Victim == M)
+				slime.UpdateFeed()
+
+		//cross any movable atoms on either turf
+		for(var/atom/movable/AM in loc)
+			AM.Crossed(src)
+		for(var/atom/movable/AM in oldloc)
+			AM.Crossed(M)
+		now_pushing = 0
+		return 1
+
+	//okay, so we didn't switch. but should we push?
+	//not if he's not CANPUSH of course
+	if(!(M.status_flags & CANPUSH))
+		return 1
+	//anti-riot equipment is also anti-push
+	if(M.r_hand && istype(M.r_hand, /obj/item/weapon/shield/riot))
+		return 1
+	if(M.l_hand && istype(M.l_hand, /obj/item/weapon/shield/riot))
+		return 1
+
+//Called when we bump onto an obj
+/mob/living/proc/ObjBump(obj/O)
+	return
+
+//Called when we want to push an atom/movable
+/mob/living/proc/PushAM(atom/movable/AM)
+	if(now_pushing)
+		return 1
+	if(!AM.anchored)
+		now_pushing = 1
+		var/t = get_dir(src, AM)
+		if (istype(AM, /obj/structure/window))
+			var/obj/structure/window/W = AM
+			if(W.fulltile)
+				for(var/obj/structure/window/win in get_step(W,t))
+					now_pushing = 0
+					return
+		if(pulling == AM)
+			stop_pulling()
+		step(AM, t)
+		now_pushing = 0
 
 //mob verbs are a lot faster than object verbs
 //for more info on why this is not atom/pull, see examinate() in mob.dm
@@ -44,8 +175,9 @@
 /mob/living/proc/InCritical()
 	return (src.health < 0 && src.health > -95.0 && stat == UNCONSCIOUS)
 
-/mob/living/ex_act(severity)
-	if(client && !blinded)
+/mob/living/ex_act(severity, target)
+	..()
+	if(client && !eye_blind)
 		flick("flash", src.flash)
 
 /mob/living/proc/updatehealth()
@@ -66,8 +198,6 @@
 /mob/living/proc/burn_skin(burn_amount)
 	if(istype(src, /mob/living/carbon/human))
 		//world << "DEBUG: burn_skin(), mutations=[mutations]"
-		if (COLD_RESISTANCE in src.mutations) //fireproof
-			return 0
 		var/mob/living/carbon/human/H = src	//make this damage method divide the damage to be done among all the body parts, then burn each body part for that much damage. will have better effect then just randomly picking a body part
 		var/divided_damage = (burn_amount)/(H.organs.len)
 		var/extradam = 0	//added to when organ is at max dam
@@ -78,8 +208,6 @@
 		H.updatehealth()
 		return 1
 	else if(istype(src, /mob/living/carbon/monkey))
-		if (COLD_RESISTANCE in src.mutations) //fireproof
-			return 0
 		var/mob/living/carbon/monkey/M = src
 		M.adjustFireLoss(burn_amount)
 		M.updatehealth()
@@ -186,9 +314,6 @@
 
 // MOB PROCS //END
 
-
-/mob/proc/get_contents()
-
 /mob/living/proc/mob_sleep()
 	set name = "Sleep"
 	set category = "IC"
@@ -200,6 +325,7 @@
 		if(alert(src, "You sure you want to sleep for a while?", "Sleep", "Yes", "No") == "Yes")
 			usr.sleeping = 20 //Short nap
 
+/mob/proc/get_contents()
 
 /mob/living/proc/lay_down()
 	set name = "Rest"
@@ -252,6 +378,17 @@
 	var/obj/item/organ/limb/def_zone = ran_zone(t)
 	return def_zone
 
+//damage/heal the mob ears and adjust the deaf amount
+/mob/living/adjustEarDamage(var/damage, var/deaf)
+	ear_damage = max(0, ear_damage + damage)
+	ear_deaf = max(0, ear_deaf + deaf)
+
+//pass a negative argument to skip one of the variable
+/mob/living/setEarDamage(var/damage, var/deaf)
+	if(damage >= 0)
+		ear_damage = damage
+	if(deaf >= 0)
+		ear_deaf = deaf
 
 // heal ONE external organ, organ gets randomly selected from damaged ones.
 /mob/living/proc/heal_organ_damage(var/brute, var/burn)
@@ -287,11 +424,9 @@
 	SetStunned(0)
 	SetWeakened(0)
 	radiation = 0
-	nutrition = 400
+	nutrition = NUTRITION_LEVEL_FED + 50
 	bodytemperature = 310
-	sdisabilities = 0
 	disabilities = 0
-	blinded = 0
 	eye_blind = 0
 	eye_blurry = 0
 	ear_deaf = 0
@@ -312,6 +447,9 @@
 		dead_mob_list -= src
 		living_mob_list += src
 	if(!isanimal(src))	stat = CONSCIOUS
+	if(ishuman(src))
+		var/mob/living/carbon/human/human_mob = src
+		human_mob.restore_blood()
 	update_fire()
 	regenerate_icons()
 	..()
@@ -337,8 +475,11 @@
 	return
 
 /mob/living/Move(atom/newloc, direct)
-	if (buckled && buckled.loc != newloc && !buckled.anchored)
-		return buckled.Move(newloc, direct)
+	if (buckled && buckled.loc != newloc)
+		if (!buckled.anchored)
+			return buckled.Move(newloc, direct)
+		else
+			return 0
 
 	if (restrained())
 		stop_pulling()
@@ -380,8 +521,7 @@
 						if (prob(75))
 							var/obj/item/weapon/grab/G = pick(M.grabbed_by)
 							if (istype(G, /obj/item/weapon/grab))
-								for(var/mob/O in viewers(M, null))
-									O.show_message(text("<span class='danger'>[] has been pulled from []'s grip by []</span>", G.affecting, G.assailant, src), 1)
+								visible_message("<span class='danger'>[src] has pulled [G.affecting] from [G.assailant]'s grip.</span>")
 								qdel(G)
 						else
 							ok = 0
@@ -392,30 +532,8 @@
 						M.stop_pulling()
 
 						//this is the gay blood on floor shit -- Added back -- Skie
-						if (M.lying && (prob(M.getBruteLoss() / 2)))
-							var/blood_exists = 0
-							var/trail_type = M.getTrail()
-							for(var/obj/effect/decal/cleanable/trail_holder/C in M.loc) //checks for blood splatter already on the floor
-								blood_exists = 1
-							if (istype(M.loc, /turf/simulated) && trail_type != null)
-								var/newdir = get_dir(T, M.loc)
-								if(newdir != M.dir)
-									newdir = newdir | M.dir
-									if(newdir == 3) //N + S
-										newdir = NORTH
-									else if(newdir == 12) //E + W
-										newdir = EAST
-								if((newdir in list(1, 2, 4, 8)) && (prob(50)))
-									newdir = turn(get_dir(T, M.loc), 180)
-								if(!blood_exists)
-									new /obj/effect/decal/cleanable/trail_holder(M.loc)
-								for(var/obj/effect/decal/cleanable/trail_holder/H in M.loc)
-									if((!(newdir in H.existing_dirs) || trail_type == "trails_1" || trail_type == "trails_2") && H.existing_dirs.len <= 16) //maximum amount of overlays is 16 (all light & heavy directions filled)
-										H.existing_dirs += newdir
-										H.overlays.Add(image('icons/effects/blood.dmi',trail_type,dir = newdir))
-										if(check_dna_integrity(M)) //blood DNA
-											var/mob/living/carbon/DNA_helper = pulling
-											H.blood_DNA[DNA_helper.dna.unique_enzymes] = DNA_helper.dna.blood_type
+						if(M.lying && !M.buckled && (prob(M.getBruteLoss() / 2)))
+							makeTrail(T, M)
 						pulling.Move(T, get_dir(pulling, T))
 						if(M)
 							M.start_pulling(t)
@@ -432,21 +550,51 @@
 		for(var/mob/living/carbon/slime/M in view(1,src))
 			M.UpdateFeed(src)
 
+/mob/living/proc/makeTrail(var/turf/T, var/mob/living/M)
+	if(ishuman(M))
+		var/mob/living/carbon/human/H = M
+		if((NOBLOOD in H.dna.species.specflags) || (!H.blood_max) || (H.bleedsuppress))
+			return
+	var/blood_exists = 0
+	var/trail_type = M.getTrail()
+	for(var/obj/effect/decal/cleanable/trail_holder/C in M.loc) //checks for blood splatter already on the floor
+		blood_exists = 1
+	if (istype(M.loc, /turf/simulated) && trail_type != null)
+		var/newdir = get_dir(T, M.loc)
+		if(newdir != M.dir)
+			newdir = newdir | M.dir
+			if(newdir == 3) //N + S
+				newdir = NORTH
+			else if(newdir == 12) //E + W
+				newdir = EAST
+		if((newdir in list(1, 2, 4, 8)) && (prob(50)))
+			newdir = turn(get_dir(T, M.loc), 180)
+		if(!blood_exists)
+			new /obj/effect/decal/cleanable/trail_holder(M.loc)
+		for(var/obj/effect/decal/cleanable/trail_holder/H in M.loc)
+			if((!(newdir in H.existing_dirs) || trail_type == "trails_1" || trail_type == "trails_2") && H.existing_dirs.len <= 16) //maximum amount of overlays is 16 (all light & heavy directions filled)
+				H.existing_dirs += newdir
+				H.overlays.Add(image('icons/effects/blood.dmi',trail_type,dir = newdir))
+				if(check_dna_integrity(M)) //blood DNA
+					var/mob/living/carbon/DNA_helper = pulling
+					H.blood_DNA[DNA_helper.dna.unique_enzymes] = DNA_helper.dna.blood_type
+
 /mob/living/proc/getTrail() //silicon and simple_animals don't get blood trails
     return null
 
 /mob/living/proc/cuff_break(obj/item/weapon/restraints/I, mob/living/carbon/C)
 
-	if(HULK in usr.mutations)
+	if(C.dna.check_mutation(HULK))
 		C.say(pick(";RAAAAAAAARGH!", ";HNNNNNNNNNGGGGGGH!", ";GWAAAAAAAARRRHHH!", "NNNNNNNNGGGGGGGGHH!", ";AAAAAAARRRGH!" ))
 
-	C.visible_message("<span class='danger'>[C] manages to break [I]!</span>", \
-				"<span class='notice'>You successfully break [I].</span>")
+	C.visible_message("<span class='danger'>[C] manages to break [I]!</span>")
+	C << "<span class='notice'>You successfully break [I].</span>"
 	qdel(I)
 
 	if(C.handcuffed)
 		C.handcuffed = null
 		C.update_inv_handcuffed(0)
+		return
 	else
 		C.legcuffed = null
 		C.update_inv_legcuffed(0)
@@ -463,9 +611,9 @@
 		breakouttime = LC.breakouttime
 	displaytime = breakouttime / 600
 
-	if(isalienadult(C) || HULK in usr.mutations)
-		C.visible_message("<span class='warning'>[C] is trying to break [I]!</span>", \
-				"<span class='warning'>You attempt to break [I]. (This will take around 5 seconds and you need to stand still.)</span>")
+	if(isalienadult(C) || C.dna.check_mutation(HULK))
+		C.visible_message("<span class='warning'>[C] is trying to break [I]!</span>")
+		C << "<span class='notice'>You attempt to break [I]. (This will take around 5 seconds and you need to stand still.)</span>"
 		spawn(0)
 			if(do_after(C, 50))
 				if(!I || C.buckled)
@@ -475,21 +623,24 @@
 				C << "<span class='warning'>You fail to break [I]!</span>"
 	else
 
-		C.visible_message("<span class='warning'>[C] attempts to remove [I]!</span>", \
-				"<span class='notice'>You attempt to remove [I]. (This will take around [displaytime] minutes and you need to stand still.)</span>")
+		C.visible_message("<span class='warning'>[C] attempts to remove [I]!</span>")
+		C << "<span class='notice'>You attempt to remove [I]. (This will take around [displaytime] minutes and you need to stand still.)</span>"
 		spawn(0)
-			if(do_after(C, breakouttime))
+			if(do_after(C, breakouttime, 10))
 				if(!I || C.buckled)
 					return
-				C.visible_message("<span class='danger'>[C] manages to remove [I]!</span>", \
-						"<span class='notice'>You successfully remove [I].</span>")
+				C.visible_message("<span class='danger'>[C] manages to remove [I]!</span>")
+				C << "<span class='notice'>You successfully remove [I].</span>"
 
 				if(C.handcuffed)
-					C.handcuffed.loc = usr.loc
+					C.handcuffed.loc = C.loc
 					C.handcuffed = null
+					if(C.buckled && C.buckled.buckle_requires_restraints)
+						C.buckled.unbuckle_mob()
 					C.update_inv_handcuffed(0)
+					return
 				if(C.legcuffed)
-					C.legcuffed.loc = usr.loc
+					C.legcuffed.loc = C.loc
 					C.legcuffed = null
 					C.update_inv_legcuffed(0)
 			else
@@ -544,13 +695,13 @@
 							return
 						C.visible_message("<span class='danger'>[C] manages to unbuckle themself!</span>", \
 											"<span class='notice'>You successfully unbuckle yourself.</span>")
-						C.buckled.manual_unbuckle(C)
+						C.buckled.user_unbuckle_mob(C,C)
 					else
 						C << "<span class='warning'>You fail to unbuckle yourself!</span>"
 			else
-				L.buckled.manual_unbuckle(L)
+				L.buckled.user_unbuckle_mob(L,L)
 		else
-			L.buckled.manual_unbuckle(L)
+			L.buckled.user_unbuckle_mob(L,L)
 
 	//Breaking out of a container (Locker, sleeper, cryo...)
 	else if(loc && istype(loc, /obj) && !isturf(loc))
@@ -563,7 +714,7 @@
 		var/mob/living/carbon/CM = L
 		if(CM.on_fire && CM.canmove)
 			CM.fire_stacks -= 5
-			CM.Weaken(3)
+			CM.Weaken(3,1)
 			CM.spin(32,2)
 			CM.visible_message("<span class='danger'>[CM] rolls on the floor, trying to put themselves out!</span>", \
 				"<span class='notice'>You stop, drop, and roll!</span>")
@@ -623,7 +774,7 @@
 
 /mob/living/proc/float(on)
 	if(on && !floating)
-		animate(src, pixel_y = 2, time = 10, loop = -1)
+		animate(src, pixel_y = pixel_y + 2, time = 10, loop = -1)
 		floating = 1
 	else if(!on && floating)
 		animate(src, pixel_y = initial(pixel_y), time = 10)
@@ -660,14 +811,22 @@
 
 /mob/living/singularity_act()
 	var/gain = 20
-	investigate_log(" has consumed [key_name(src)].","singulo") //Oh that's where the clown ended up!
+	investigate_log("([key_name(src)]) has been consumed by the singularity.","singulo") //Oh that's where the clown ended up!
 	gib()
 	return(gain)
 
 /mob/living/singularity_pull(S)
 	step_towards(src,S)
 
-/mob/living/proc/do_attack_animation(atom/A)
+/mob/living/narsie_act()
+	if(client)
+		makeNewConstruct(/mob/living/simple_animal/construct/harvester, src, null, 1)
+	spawn_dust()
+	gib()
+	return
+
+
+/atom/movable/proc/do_attack_animation(atom/A)
 	var/pixel_x_diff = 0
 	var/pixel_y_diff = 0
 	var/direction = get_dir(src, A)
@@ -694,4 +853,17 @@
 			pixel_y_diff = -8
 	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff, time = 2)
 	animate(pixel_x = initial(pixel_x), pixel_y = initial(pixel_y), time = 2)
-	floating = 0 // If we were without gravity, the bouncing animation got stopped, so we make sure we restart the bouncing after the next movement.
+
+
+/mob/living/do_attack_animation(atom/A)
+	..()
+	floating = 0 // If we were without gravity, the bouncing animation got stopped, so we make sure to restart it in next life().
+
+/mob/living/proc/do_jitter_animation(jitteriness)
+	var/amplitude = min(4, (jitteriness/100) + 1)
+	var/pixel_x_diff = rand(-amplitude, amplitude)
+	var/pixel_y_diff = rand(-amplitude/3, amplitude/3)
+	animate(src, pixel_x = pixel_x + pixel_x_diff, pixel_y = pixel_y + pixel_y_diff , time = 2, loop = 6)
+	animate(pixel_x = initial(pixel_x) , pixel_y = initial(pixel_y) , time = 2)
+	floating = 0 // If we were without gravity, the bouncing animation got stopped, so we make sure to restart it in next life().
+

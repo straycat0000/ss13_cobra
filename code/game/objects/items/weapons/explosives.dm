@@ -40,7 +40,7 @@
 	explode(get_turf(user))
 	return .
 
-/obj/item/weapon/c4/attackby(var/obj/item/I, var/mob/user)
+/obj/item/weapon/c4/attackby(var/obj/item/I, var/mob/user, params)
 	if(istype(I, /obj/item/weapon/screwdriver))
 		open_panel = !open_panel
 		user << "<span class='notice'>You [open_panel ? "open" : "close"] the wire panel.</span>"
@@ -81,24 +81,14 @@
 		target.overlays += image_overlay
 		user << "Bomb has been planted. Timer counting down from [timer]."
 		spawn(timer*10)
-			explode(get_turf(target))
+			if(target && !target.gc_destroyed)
+				explode(get_turf(target))
+			else
+				qdel(src)
 
-/obj/item/weapon/c4/proc/explode(var/location)
-	if(!target)
-		target = get_atom_on_turf(src)
-	if(!target)
-		target = src
-	if(location)
-		explosion(location, -1, -1, 4, 4)
-
-	if(target)
-		if (istype(target, /turf/simulated/wall))
-			var/turf/simulated/wall/W = target
-			W.dismantle_wall(1)
-		else if(istype(target, /mob/living))
-			target.ex_act(2) // c4 can't gib mobs anymore.
-		else
-			target.ex_act(1)
+/obj/item/weapon/c4/proc/explode(var/turf/location)
+	location.ex_act(2, target)
+	explosion(location,0,0,3)
 	if(target)
 		target.overlays -= image_overlay
 	qdel(src)

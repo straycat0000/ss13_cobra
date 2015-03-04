@@ -60,16 +60,12 @@
 	#define REPLACE_TILE	5
 	#define TILE_EMAG		6
 
-#define KIWATA 1
-
 /obj/machinery/bot/floorbot/New()
 	..()
 	updateicon()
 	var/datum/job/engineer/J = new/datum/job/engineer
 	botcard.access = J.get_access()
 	prev_access = botcard.access
-	if(target == KIWATA)
-		return
 
 	spawn(5)
 		add_to_beacons(bot_filter)
@@ -136,7 +132,7 @@
 	return
 
 
-/obj/machinery/bot/floorbot/attackby(var/obj/item/W , mob/user as mob)
+/obj/machinery/bot/floorbot/attackby(var/obj/item/W , mob/user as mob, params)
 	if(istype(W, /obj/item/stack/tile/plasteel))
 		var/obj/item/stack/tile/plasteel/T = W
 		if(amount >= 50)
@@ -347,7 +343,7 @@ obj/machinery/bot/floorbot/process_scan(var/scan_target)
 				result = F
 		if(FIX_TILE)	//Selects only damaged floors.
 			F = scan_target
-			if(F.broken || F.burnt)
+			if(istype(F) && (F.broken || F.burnt))
 				result = F
 		if(TILE_EMAG) //Emag mode! Rip up the floor and cause breaches to space!
 			F = scan_target
@@ -356,7 +352,7 @@ obj/machinery/bot/floorbot/process_scan(var/scan_target)
 		else //If no special processing is needed, simply return the result.
 			result = scan_target
 	return result
-view
+
 /obj/machinery/bot/floorbot/proc/repair(var/turf/target_turf)
 
 	if(istype(target_turf, /turf/space/))
@@ -478,7 +474,7 @@ view
 	return
 
 
-/obj/item/weapon/storage/toolbox/mechanical/attackby(var/obj/item/stack/tile/plasteel/T, mob/user as mob)
+/obj/item/weapon/storage/toolbox/mechanical/attackby(var/obj/item/stack/tile/plasteel/T, mob/user as mob, params)
 	if(!istype(T, /obj/item/stack/tile/plasteel))
 		..()
 		return
@@ -497,7 +493,7 @@ view
 		user << "<span class='alert'>You need 10 floor tiles to start building a floorbot.</span>"
 		return
 
-/obj/item/weapon/toolbox_tiles/attackby(var/obj/item/W, mob/user as mob)
+/obj/item/weapon/toolbox_tiles/attackby(var/obj/item/W, mob/user as mob, params)
 	..()
 	if(isprox(W))
 		qdel(W)
@@ -517,7 +513,7 @@ view
 
 		created_name = t
 
-/obj/item/weapon/toolbox_tiles_sensor/attackby(var/obj/item/W, mob/user as mob)
+/obj/item/weapon/toolbox_tiles_sensor/attackby(var/obj/item/W, mob/user as mob, params)
 	..()
 	if(istype(W, /obj/item/robot_parts/l_arm) || istype(W, /obj/item/robot_parts/r_arm))
 		qdel(W)

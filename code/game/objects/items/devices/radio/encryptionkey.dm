@@ -13,7 +13,7 @@
 
 /obj/item/device/encryptionkey/New()
 
-/obj/item/device/encryptionkey/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/item/device/encryptionkey/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 
 /obj/item/device/encryptionkey/syndicate
 	icon_state = "cypherkey"
@@ -22,6 +22,8 @@
 	syndie = 1//Signifies that it de-crypts Syndicate transmissions
 
 /obj/item/device/encryptionkey/binary
+	name = "binary translator key"
+	desc = "An encryption key for a radio headset.  To access the binary channel, use :b."
 	icon_state = "cypherkey"
 	translate_binary = 1
 	origin_tech = "syndicate=3"

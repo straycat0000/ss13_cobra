@@ -5,15 +5,14 @@
 	icon_closed = "syndicate"
 	icon_opened = "syndicateopen"
 
-
 /obj/structure/closet/syndicate/personal
 	desc = "It's a personal storage unit for operative gear."
 
 /obj/structure/closet/syndicate/personal/New()
 	..()
 	new /obj/item/clothing/under/syndicate(src)
-	new /obj/item/clothing/suit/armor/vest(src)
-	new /obj/item/clothing/head/helmet/swat/syndicate(src)
+	new /obj/item/clothing/shoes/sneakers/black(src)
+	new /obj/item/device/radio/headset/syndicate(src)
 	new /obj/item/ammo_box/magazine/m10mm(src)
 	new /obj/item/weapon/storage/belt/military(src)
 	new /obj/item/weapon/crowbar/red(src)
@@ -32,11 +31,13 @@
 	new /obj/item/ammo_box/magazine/m10mm(src)
 	new /obj/item/weapon/storage/box/flashbangs(src)
 	new /obj/item/weapon/storage/box/teargas(src)
-	new /obj/item/weapon/gun/projectile/automatic/bulldog(src)
-	new /obj/item/weapon/gun/projectile/automatic/bulldog(src)
-	new /obj/item/weapon/gun/projectile/automatic/bulldog(src)
-	new /obj/item/weapon/gun/projectile/automatic/bulldog(src)
-	new /obj/item/weapon/gun/projectile/automatic/bulldog(src)
+	new /obj/item/weapon/storage/backpack/dufflebag/syndiemed(src)
+	new /obj/item/weapon/storage/backpack/dufflebag/syndieammo(src)
+	new /obj/item/weapon/gun/projectile/automatic/shotgun/bulldog(src)
+	new /obj/item/weapon/gun/projectile/automatic/shotgun/bulldog(src)
+	new /obj/item/weapon/gun/projectile/automatic/shotgun/bulldog(src)
+	new /obj/item/weapon/gun/projectile/automatic/shotgun/bulldog(src)
+	new /obj/item/weapon/gun/projectile/automatic/shotgun/bulldog(src)
 	new /obj/item/weapon/pinpointer/nukeop(src)
 	new /obj/item/weapon/pinpointer/nukeop(src)
 	new /obj/item/weapon/pinpointer/nukeop(src)

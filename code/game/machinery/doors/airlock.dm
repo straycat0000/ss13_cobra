@@ -877,7 +877,7 @@ About the new airlock wires panel:
 		updateUsrDialog()
 	return
 
-/obj/machinery/door/airlock/attackby(C as obj, mob/user as mob)
+/obj/machinery/door/airlock/attackby(C as obj, mob/user as mob, params)
 	if(!istype(usr, /mob/living/silicon))
 		if(src.isElectrified())
 			if(src.shock(user, 75))
@@ -896,9 +896,10 @@ About the new airlock wires panel:
 			if(do_after(user,40,5,1))
 				if(density && !operating)//Door must be closed to weld.
 					if( !istype(src, /obj/machinery/door/airlock) || !user || !W || !W.isOn() || !user.loc )
-						return					playsound(loc, 'sound/items/Welder2.ogg', 50, 1)
+						return
+					playsound(loc, 'sound/items/Welder2.ogg', 50, 1)
 					welded = !welded
-					user.visible_message("<span class='warning'>[src] has been [welded? "welded shut":"unwelded"] by [user.name].</span>", \
+					user.visible_message("<span class='warning'>[user.name] has [welded? "welded shut":"unwelded"] [src].</span>", \
 										"<span class='notice'>You've [welded ? "welded the airlock shut":"unwelded the airlock"].</span>")
 					update_icon()
 		return
@@ -981,7 +982,7 @@ About the new airlock wires panel:
 		..()
 	return
 
-/obj/machinery/door/airlock/plasma/attackby(C as obj, mob/user as mob)
+/obj/machinery/door/airlock/plasma/attackby(C as obj, mob/user as mob, params)
 	if(is_hot(C) > 300)//If the temperature of the object is over 300, then ignite
 		message_admins("Plasma wall ignited by [key_name(user, user.client)](<A HREF='?_src_=holder;adminmoreinfo=\ref[user]'>?</A>) in ([x],[y],[z] - <A HREF='?_src_=holder;adminplayerobservecoodjump=1;X=[x];Y=[y];Z=[z]'>JMP</a>)")
 		log_game("Plasma wall ignited by [user.ckey]([user]) in ([x],[y],[z])")
@@ -1033,8 +1034,6 @@ About the new airlock wires panel:
 				autoclose()
 			return
 
-	crush()
-
 	if(forced < 2)
 		if(emagged)
 			return
@@ -1052,8 +1051,25 @@ About the new airlock wires panel:
 	if(killthis)
 		killthis.ex_act(2)//Smashin windows
 
-	..()
-
+	if(density)
+		return 1
+	operating = 1
+	do_animate("closing")
+	src.layer = 3.1
+	sleep(5)
+	src.density = 1
+	if(!safe)
+		crush()
+	sleep(5)
+	update_icon()
+	if(visible && !glass)
+		SetOpacity(1)
+	operating = 0
+	air_update_turf(1)
+	update_freelook_sight()
+	if(locate(/mob/living) in get_turf(src))
+		open()
+	return
 
 /obj/machinery/door/airlock/New()
 	..()
@@ -1179,4 +1195,11 @@ About the new airlock wires panel:
 				heat_proof = 0
 	update_icon()
 
+/obj/machinery/door/airlock/CanAStarPass(var/obj/item/weapon/card/id/ID)
+//Airlock is passable if it is open (!density), bot has access, and is not bolted shut)
+	return !density || (check_access(ID) && !locked)
 
+/obj/machinery/door/airlock/HasProximity(atom/movable/AM as mob|obj)
+	for (var/obj/A in contents)
+		A.HasProximity(AM)
+	return

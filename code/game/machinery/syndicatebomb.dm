@@ -48,7 +48,7 @@
 /obj/machinery/syndicatebomb/update_icon()
 	icon_state = "[initial(icon_state)][active ? "-active" : "-inactive"][open_panel ? "-wires" : ""]"
 
-/obj/machinery/syndicatebomb/attackby(var/obj/item/I, var/mob/user)
+/obj/machinery/syndicatebomb/attackby(var/obj/item/I, var/mob/user, params)
 	if(istype(I, /obj/item/weapon/wrench))
 		if(!anchored)
 			if(!isturf(src.loc) || istype(src.loc, /turf/space))
@@ -180,7 +180,7 @@
 	origin_tech = "syndicate=6;combat=5"
 	var/adminlog = null
 
-/obj/item/weapon/bombcore/ex_act(severity) //Little boom can chain a big boom
+/obj/item/weapon/bombcore/ex_act(severity, target) //Little boom can chain a big boom
 	src.detonate()
 
 /obj/item/weapon/bombcore/proc/detonate()

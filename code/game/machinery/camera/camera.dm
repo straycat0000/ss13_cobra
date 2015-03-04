@@ -93,11 +93,11 @@
 			..()
 
 
-/obj/machinery/camera/ex_act(severity)
+/obj/machinery/camera/ex_act(severity, target)
 	if(src.invuln)
 		return
 	else
-		..(severity)
+		..()
 	return
 
 /obj/machinery/camera/blob_act()
@@ -124,7 +124,7 @@
 	add_hiddenprint(user)
 	deactivate(user,0)
 
-/obj/machinery/camera/attackby(W as obj, mob/living/user as mob)
+/obj/machinery/camera/attackby(W as obj, mob/living/user as mob, params)
 	var/msg = "<span class='notice'>You attach [W] into the assembly inner circuits.</span>"
 	var/msg2 = "<span class='notice'>The camera already has that upgrade!</span>"
 
@@ -221,7 +221,7 @@
 		spark_system.start()
 		playsound(loc, 'sound/weapons/blade1.ogg', 50, 1)
 		playsound(loc, "sparks", 50, 1)
-		visible_message("<span class='notice'>The camera has been sliced apart by [] with an energy blade!</span>")
+		visible_message("<span class='notice'>[user] has sliced the camera apart with an energy blade!</span>")
 		qdel(src)
 	else if(istype(W, /obj/item/device/laser_pointer))
 		var/obj/item/device/laser_pointer/L = W
@@ -269,7 +269,7 @@
 /obj/machinery/camera/proc/cancelCameraAlarm()
 	alarm_on = 0
 	for(var/mob/living/silicon/S in mob_list)
-		S.cancelAlarm("Camera", get_area(src), list(src), src)
+		S.cancelAlarm("Camera", get_area(src), src)
 
 /obj/machinery/camera/proc/can_use()
 	if(!status)

@@ -32,10 +32,10 @@
 	var/stationary_mode = 0 //If enabled, the Medibot will not move automatically.
 	radio_frequency = MED_FREQ //Medical frequency
 	//Setting which reagents to use to treat what by default. By id.
-	var/treatment_brute = "tricordrazine"
-	var/treatment_oxy = "tricordrazine"
-	var/treatment_fire = "tricordrazine"
-	var/treatment_tox = "tricordrazine"
+	var/treatment_brute = "salglu_solution"
+	var/treatment_oxy = "salbutamol"
+	var/treatment_fire = "salglu_solution"
+	var/treatment_tox = "charcoal"
 	var/treatment_virus = "spaceacillin"
 	var/treat_virus = 1 //If on, the bot will attempt to treat viral infections, curing them if possible.
 	var/shut_up = 0 //self explanatory :)
@@ -46,10 +46,10 @@
 	name = "\improper Mysterious Medibot"
 	desc = "International Medibot of mystery."
 	skin = "bezerk"
-	treatment_oxy = "dexalinp"
-	treatment_brute = "bicaridine"
-	treatment_fire = "kelotane"
-	treatment_tox = "anti_toxin"
+	treatment_oxy = "omnizine"
+	treatment_brute = "omnizine"
+	treatment_fire = "omnizine"
+	treatment_tox = "omnizine"
 
 /obj/item/weapon/firstaid_arm_assembly
 	name = "incomplete medibot assembly."
@@ -209,7 +209,7 @@
 	updateUsrDialog()
 	return
 
-/obj/machinery/bot/medbot/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/machinery/bot/medbot/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if (istype(W, /obj/item/weapon/card/id)||istype(W, /obj/item/device/pda))
 		if (allowed(user) && !open && !emagged)
 			locked = !locked
@@ -317,12 +317,18 @@
 		return
 
 	//Patient has moved away from us!
-	else if(patient && path && path.len && (get_dist(patient,path[path.len]) > 2))
+	else if(patient && path.len && (get_dist(patient,path[path.len]) > 2))
 		path = list()
 		mode = BOT_IDLE
 		last_found = world.time
 
-	if(!stationary_mode && patient && path.len == 0 && (get_dist(src,patient) > 1))
+	else if(stationary_mode && patient) //Since we cannot move in this mode, ignore the patient and wait for another.
+		patient = null
+		mode = BOT_IDLE
+		last_found = world.time
+		return
+
+	if(patient && path.len == 0 && (get_dist(src,patient) > 1))
 		spawn(0)
 			path = get_path_to(loc, get_turf(patient), /turf/proc/CardinalTurfsWithAccess, /turf/proc/Distance_cardinal, 0, 30,id=botcard)
 
@@ -478,6 +484,7 @@
 					patient.reagents.add_reagent(reagent_id,injection_amount)
 				C.visible_message("<span class='danger'>[src] injects [patient] with the syringe!</span>", \
 					"<span class='userdanger'>[src] injects [patient] with the syringe!</span>")
+				patient = null
 
 			mode = BOT_IDLE
 			updateicon()
@@ -522,13 +529,13 @@
 	speak("Medical emergency! [crit_patient ? "<b>[crit_patient]</b>" : "A patient"] is in critical condition at [location]!",radio_frequency)
 	declare_cooldown = 1
 	spawn(200) //Twenty seconds
-	declare_cooldown = 0
+		declare_cooldown = 0
 
 /*
  *	Medbot Assembly -- Can be made out of all three medkits.
  */
 
-/obj/item/weapon/storage/firstaid/attackby(var/obj/item/robot_parts/S, mob/user as mob)
+/obj/item/weapon/storage/firstaid/attackby(var/obj/item/robot_parts/S, mob/user as mob, params)
 
 	if ((!istype(S, /obj/item/robot_parts/l_arm)) && (!istype(S, /obj/item/robot_parts/r_arm)))
 		..()
@@ -546,6 +553,8 @@
 		A.skin = "tox"
 	else if(istype(src,/obj/item/weapon/storage/firstaid/o2))
 		A.skin = "o2"
+	else if(istype(src,/obj/item/weapon/storage/firstaid/brute))
+		A.skin = "brute"
 
 	qdel(S)
 	user.put_in_hands(A)
@@ -554,7 +563,7 @@
 	qdel(src)
 
 
-/obj/item/weapon/firstaid_arm_assembly/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/item/weapon/firstaid_arm_assembly/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	..()
 	if(istype(W, /obj/item/weapon/pen))
 		var/t = stripped_input(user, "Enter new robot name", name, created_name,MAX_NAME_LEN)

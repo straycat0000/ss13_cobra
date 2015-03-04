@@ -20,13 +20,11 @@
 	 "enzyme" = list("enzyme", "universal enzyme bottle", "Used in cooking various dishes"),
 	 "soysauce" = list("soysauce", "soy sauce bottle", "A salty soy-based flavoring"),
 	 "frostoil" = list("coldsauce", "coldsauce bottle", "Leaves the tongue numb in it's passage"),
-	 "sodiumchloride" = list("saltshaker", "salt shaker", "Salt. From space oceans, presumably"),
+	 "sodiumchloride" = list("saltshakersmall", "salt shaker", "Salt. From space oceans, presumably"),
 	 "blackpepper" = list("pepermillsmall", "pepper mill", "Often used to flavor food or make people sneeze"),
 	 "cornoil" = list("oliveoil", "corn oil bottle", "A delicious oil used in cooking. Made from corn"),
 	 "sugar" = list("emptycondiment", "sugar bottle", "Tasty spacey sugar!"))
 
-/obj/item/weapon/reagent_containers/food/condiment/attackby(obj/item/weapon/W as obj, mob/user as mob)
-	return
 
 /obj/item/weapon/reagent_containers/food/condiment/attack_self(mob/user as mob)
 	return
@@ -42,7 +40,7 @@
 		return 0
 
 	if(M == user)
-		M << "<span class='notice'>You swallow some of contents of the [src].</span>"
+		M << "<span class='notice'>You swallow some of contents of \the [src].</span>"
 		if(reagents.total_volume)
 			reagents.reaction(M, INGEST)
 			spawn(5)
@@ -65,9 +63,6 @@
 		playsound(M.loc,'sound/items/drink.ogg', rand(10,50), 1)
 		return 1
 	return 0
-
-/obj/item/weapon/reagent_containers/food/condiment/attackby(obj/item/I as obj, mob/user as mob)
-	return
 
 /obj/item/weapon/reagent_containers/food/condiment/afterattack(obj/target, mob/user , proximity)
 	if(!proximity) return
@@ -96,7 +91,7 @@
 		user << "<span class='notice'>You transfer [trans] units of the condiment to [target].</span>"
 
 /obj/item/weapon/reagent_containers/food/condiment/on_reagent_change()
-	if(icon_state == "saltshakersmall" || icon_state == "peppermillsmall")
+	if(!possible_states.len)
 		return
 	if(reagents.reagent_list.len > 0)
 		var/main_reagent = reagents.get_master_reagent_id()
@@ -124,16 +119,12 @@
 	name = "universal enzyme"
 	desc = "Used in cooking various dishes."
 	icon_state = "enzyme"
-
-/obj/item/weapon/reagent_containers/food/condiment/enzyme/New()
-	..()
-	reagents.add_reagent("enzyme", 50)
+	list_reagents = list("enzyme" = 50)
 
 /obj/item/weapon/reagent_containers/food/condiment/sugar
-
-/obj/item/weapon/reagent_containers/food/condiment/sugar/New()
-	..()
-	reagents.add_reagent("sugar", 50)
+	name = "sugar bottle"
+	desc = "Tasty spacey sugar!"
+	list_reagents = list("sugar" = 50)
 
 /obj/item/weapon/reagent_containers/food/condiment/saltshaker		//Seperate from above since it's a small shaker rather then
 	name = "salt shaker"											//	a large one.
@@ -142,10 +133,8 @@
 	possible_transfer_amounts = list(1,20) //for clown turning the lid off
 	amount_per_transfer_from_this = 1
 	volume = 20
-
-/obj/item/weapon/reagent_containers/food/condiment/saltshaker/New()
-	..()
-	reagents.add_reagent("sodiumchloride", 20)
+	list_reagents = list("sodiumchloride" = 20)
+	possible_states = list()
 
 /obj/item/weapon/reagent_containers/food/condiment/peppermill
 	name = "pepper mill"
@@ -154,12 +143,39 @@
 	possible_transfer_amounts = list(1,20) //for clown turning the lid off
 	amount_per_transfer_from_this = 1
 	volume = 20
+	list_reagents = list("blackpepper" = 20)
+	possible_states = list()
 
-/obj/item/weapon/reagent_containers/food/condiment/peppermill/New()
-	..()
-	reagents.add_reagent("blackpepper", 20)
+/obj/item/weapon/reagent_containers/food/condiment/milk
+	name = "space milk"
+	desc = "It's milk. White and nutritious goodness!"
+	icon_state = "milk"
+	item_state = "carton"
+	list_reagents = list("milk" = 50)
+	possible_states = list()
+
+/obj/item/weapon/reagent_containers/food/condiment/flour
+	name = "flour sack"
+	desc = "A big bag of flour. Good for baking!"
+	icon = 'icons/obj/food.dmi'
+	icon_state = "flour"
+	item_state = "flour"
+	list_reagents = list("flour" = 30)
+	possible_states = list()
+
+/obj/item/weapon/reagent_containers/food/condiment/soymilk
+	name = "soy milk"
+	desc = "It's soy milk. White and nutritious goodness!"
+	icon_state = "soymilk"
+	item_state = "carton"
+	list_reagents = list("soymilk" = 50)
+	possible_states = list()
+
+
+
 
 //Food packs. To easily apply deadly toxi... delicious sauces to your food!
+
 /obj/item/weapon/reagent_containers/food/condiment/pack
 	name = "condiment pack"
 	desc = "A small plastic pack with condiments to put on your food"
@@ -169,11 +185,6 @@
 	possible_transfer_amounts = list(10)
 	possible_states = list("ketchup" = list("condi_ketchup", "Ketchup", "You feel more American already."), "capsaicin" = list("condi_hotsauce", "Hotsauce", "You can almost TASTE the stomach ulcers now!"), "soysauce" = list("condi_soysauce", "Soy Sauce", "A salty soy-based flavoring"), "frostoil" = list("condi_frostoil", "Coldsauce", "Leaves the tongue numb in it's passage"), "sodiumchloride" = list("condi_salt", "Salt Shaker", "Salt. From space oceans, presumably"), "blackpepper" = list("condi_pepper", "Pepper Mill", "Often used to flavor food or make people sneeze"), "cornoil" = list("condi_cornoil", "Corn Oil", "A delicious oil used in cooking. Made from corn"), "sugar" = list("condi_sugar", "Sugar", "Tasty spacey sugar!"))
 	var/originalname = "condiment" //Can't use initial(name) for this. This stores the name set by condimasters.
-
-/obj/item/weapon/reagent_containers/food/condiment/pack/New()
-	..()
-	pixel_x = rand(-7, 7)
-	pixel_y = rand(-7, 7)
 
 /obj/item/weapon/reagent_containers/food/condiment/pack/attack(mob/M, mob/user, def_zone) //Can't feed these to people directly.
 	return
@@ -214,16 +225,10 @@
 /obj/item/weapon/reagent_containers/food/condiment/pack/ketchup
 	name = "ketchup pack"
 	originalname = "ketchup"
-
-/obj/item/weapon/reagent_containers/food/condiment/pack/ketchup/New()
-		..()
-		reagents.add_reagent("ketchup", 10)
+	list_reagents = list("ketchup" = 10)
 
 //Hot sauce
 /obj/item/weapon/reagent_containers/food/condiment/pack/hotsauce
 	name = "hotsauce pack"
 	originalname = "hotsauce"
-
-/obj/item/weapon/reagent_containers/food/condiment/pack/hotsauce/New()
-		..()
-		reagents.add_reagent("capsaicin", 10)
+	list_reagents = list("capsaicin" = 10)

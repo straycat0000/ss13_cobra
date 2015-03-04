@@ -16,8 +16,7 @@
 	g_amt = 50
 	var/rigged = 0		// true if rigged to explode
 	var/minor_fault = 0 //If not 100% reliable, it will build up faults.
-	var/construction_cost = list("metal"=750,"glass"=75)
-	var/construction_time=100
+	var/chargerate = 100 //how much power is given every tick in a recharger
 
 /obj/item/weapon/stock_parts/cell/suicide_act(mob/user)
 	user.visible_message("<span class='suicide'>[user] is licking the electrodes of the [src.name]! It looks like \he's trying to commit suicide.</span>")
@@ -46,6 +45,20 @@
 	..()
 	charge = 0
 
+/obj/item/weapon/stock_parts/cell/pulse //40 pulse shots
+	name = "pulse rifle power cell"
+	maxcharge = 8000
+	rating = 3
+	chargerate = 1500
+
+/obj/item/weapon/stock_parts/cell/pulse/carbine //25 pulse shots
+	name = "pulse carbine power cell"
+	maxcharge = 5000
+
+/obj/item/weapon/stock_parts/cell/pulse/pistol //10 pulse shots
+	name = "pulse pistol power cell"
+	maxcharge = 2000
+
 /obj/item/weapon/stock_parts/cell/high
 	name = "high-capacity power cell"
 	origin_tech = "powerstorage=2"
@@ -53,6 +66,7 @@
 	maxcharge = 10000
 	g_amt = 60
 	rating = 3
+	chargerate = 1500
 
 /obj/item/weapon/stock_parts/cell/high/empty/New()
 	..()
@@ -64,8 +78,8 @@
 	icon_state = "scell"
 	maxcharge = 20000
 	g_amt = 70
-	construction_cost = list("metal"=750,"glass"=100)
 	rating = 4
+	chargerate = 2000
 
 /obj/item/weapon/stock_parts/cell/super/empty/New()
 	..()
@@ -77,8 +91,8 @@
 	icon_state = "hpcell"
 	maxcharge = 30000
 	g_amt = 80
-	construction_cost = list("metal"=500,"glass"=150,"gold"=200,"silver"=200)
 	rating = 5
+	chargerate = 3000
 
 /obj/item/weapon/stock_parts/cell/hyper/empty/New()
 	..()
@@ -91,6 +105,7 @@
 	maxcharge = 30000
 	g_amt = 80
 	rating = 6
+	chargerate = 30000
 	use()
 		return 1
 
@@ -98,7 +113,7 @@
 	name = "potato battery"
 	desc = "A rechargable starch based power cell."
 	origin_tech = "powerstorage=1"
-	icon = 'icons/obj/power.dmi' //'icons/obj/harvest.dmi'
+	icon = 'icons/obj/power.dmi' //'icons/obj/hydroponics/harvest.dmi'
 	icon_state = "potato_cell" //"potato_battery"
 	charge = 100
 	maxcharge = 300
@@ -107,13 +122,28 @@
 	minor_fault = 1
 	rating = 1
 
-/obj/item/weapon/stock_parts/cell/slime
+/obj/item/weapon/stock_parts/cell/high/slime
 	name = "charged slime core"
 	desc = "A yellow slime core infused with plasma, it crackles with power."
 	origin_tech = "powerstorage=2;biotech=4"
-	icon = 'icons/mob/slimes.dmi' //'icons/obj/harvest.dmi'
-	icon_state = "yellow slime extract" //"potato_battery"
-	maxcharge = 10000
+	icon = 'icons/mob/slimes.dmi'
+	icon_state = "yellow slime extract"
 	m_amt = 0
 	g_amt = 0
-	rating = 3
+
+
+/obj/item/weapon/stock_parts/cell/emproof
+	name = "\improper EMP-proof cell"
+	desc = "An EMP-proof cell."
+	maxcharge = 500
+	rating = 2
+
+/obj/item/weapon/stock_parts/cell/emproof/empty/New()
+	..()
+	charge = 0
+
+/obj/item/weapon/stock_parts/cell/emproof/emp_act(severity)
+	return
+
+/obj/item/weapon/stock_parts/cell/emproof/corrupt()
+	return

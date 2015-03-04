@@ -2,7 +2,7 @@
 /obj/item/weapon/watertank
 	name = "backpack water tank"
 	desc = "A S.U.N.S.H.I.N.E. brand watertank backpack with nozzle to water plants."
-	icon = 'icons/obj/hydroponics.dmi'
+	icon = 'icons/obj/hydroponics/equipment.dmi'
 	icon_state = "waterbackpack"
 	item_state = "waterbackpack"
 	w_class = 4.0
@@ -20,15 +20,14 @@
 	noz = make_noz()
 
 /obj/item/weapon/watertank/ui_action_click()
-	if (usr.get_item_by_slot(slot_back) == src)
-		toggle_mister()
-	else
-		usr << "<span class='notice'>The watertank needs to be on your back to use!</span>"
-	return
+	toggle_mister()
 
 /obj/item/weapon/watertank/verb/toggle_mister()
 	set name = "Toggle Mister"
 	set category = "Object"
+	if (usr.get_item_by_slot(slot_back) != src)
+		usr << "<span class='notice'>The watertank needs to be on your back to use.</span>"
+		return
 	if(usr.stat || !usr.canmove || usr.restrained())
 		return
 	on = !on
@@ -37,16 +36,16 @@
 	if(on)
 		if(noz == null)
 			noz = make_noz()
-			
+
 		//Detach the nozzle into the user's hands
 		if(!user.put_in_hands(noz))
 			on = 0
-			user << "<span class='notice'>You need a free hand to hold the mister!</span>"
+			user << "<span class='notice'>You need a free hand to hold the mister.</span>"
 			return
 		noz.loc = user
 	else
 		//Remove from their hands and put back "into" the tank
-		remove_noz(user)
+		remove_noz()
 	return
 
 /obj/item/weapon/watertank/proc/make_noz()
@@ -54,22 +53,51 @@
 
 /obj/item/weapon/watertank/equipped(mob/user, slot)
 	if (slot != slot_back)
-		remove_noz(user)
+		remove_noz()
 
-/obj/item/weapon/watertank/proc/remove_noz(mob/user)
-	var/mob/living/carbon/human/M = user
-	if(noz in get_both_hands(M))
+/obj/item/weapon/watertank/proc/remove_noz()
+	if(ismob(noz.loc))
+		var/mob/M = noz.loc
 		M.unEquip(noz, 1)
 	return
 
 /obj/item/weapon/watertank/Destroy()
 	if (on)
-		var/M = get(noz, /mob)
-		remove_noz(M)
+		remove_noz()
 		qdel(noz)
 		noz = null
 	..()
 	return
+
+/obj/item/weapon/watertank/attack_hand(mob/user as mob)
+	if(src.loc == user)
+		ui_action_click()
+		return
+	..()
+
+/obj/item/weapon/watertank/MouseDrop(obj/over_object)
+	if(ishuman(src.loc))
+		var/mob/living/carbon/human/H = src.loc
+		switch(over_object.name)
+			if("r_hand")
+				if(H.r_hand)
+					return
+				if(!H.unEquip(src))
+					return
+				H.put_in_r_hand(src)
+			if("l_hand")
+				if(H.l_hand)
+					return
+				if(!H.unEquip(src))
+					return
+				H.put_in_l_hand(src)
+	return
+
+/obj/item/weapon/watertank/attackby(obj/item/W, mob/user, params)
+	if(W == noz)
+		remove_noz()
+		return
+	..()
 
 // This mister item is intended as an extension of the watertank and always attached to it.
 // Therefore, it's designed to be "locked" to the player's hands or extended back onto
@@ -78,13 +106,14 @@
 /obj/item/weapon/reagent_containers/spray/mister
 	name = "water mister"
 	desc = "A mister nozzle attached to a water tank."
-	icon = 'icons/obj/hydroponics.dmi'
+	icon = 'icons/obj/hydroponics/equipment.dmi'
 	icon_state = "mister"
 	item_state = "mister"
 	w_class = 4.0
 	amount_per_transfer_from_this = 50
 	possible_transfer_amounts = list(25,50,100)
 	volume = 500
+	flags = NODROP | OPENCONTAINER | NOBLUDGEON
 
 	var/obj/item/weapon/watertank/tank
 
@@ -97,7 +126,7 @@
 	return
 
 /obj/item/weapon/reagent_containers/spray/mister/dropped(mob/user as mob)
-	user << "<span class='notice'>The mister snaps back onto the watertank!</span>"
+	user << "<span class='notice'>The mister snaps back onto the watertank.</span>"
 	tank.on = 0
 	loc = tank
 
@@ -117,6 +146,11 @@
 	if(loc != tank.loc)
 		loc = tank.loc
 
+/obj/item/weapon/reagent_containers/spray/mister/afterattack(obj/target, mob/user, proximity)
+	if(target.loc == loc || target == tank) //Safety check so you don't fill your mister with mutagen or something and then blast yourself in the face with it putting it away
+		return
+	..()
+
 //Janitor tank
 /obj/item/weapon/watertank/janitor
 	name = "backpack water tank"
@@ -128,11 +162,10 @@
 	..()
 	reagents.add_reagent("cleaner", 500)
 
-
 /obj/item/weapon/reagent_containers/spray/mister/janitor
 	name = "janitor spray nozzle"
 	desc = "A janitorial spray nozzle attached to a watertank, designed to clean up large messes."
-	icon = 'icons/obj/hydroponics.dmi'
+	icon = 'icons/obj/hydroponics/equipment.dmi'
 	icon_state = "misterjani"
 	item_state = "misterjani"
 	amount_per_transfer_from_this = 5
@@ -158,44 +191,19 @@
 	item_state = "waterbackpackatmos"
 	volume = 200
 
-/obj/item/weapon/watertank/atmos/attack_hand(mob/user as mob)
-	if(src.loc == user)
-		ui_action_click()
-		return
-	..()
-
-/obj/item/weapon/watertank/atmos/MouseDrop(obj/over_object)
-	if(ishuman(src.loc))
-		var/mob/living/carbon/human/H = src.loc
-		switch(over_object.name)
-			if("r_hand")
-				if(!H.unEquip(src))
-					return
-				H.put_in_r_hand(src)
-			if("l_hand")
-				if(!H.unEquip(src))
-					return
-				H.put_in_l_hand(src)
-	return
-
-/obj/item/weapon/watertank/atmos/attackby(obj/item/W, mob/user)
-	if(istype(W, /obj/item/weapon/extinguisher/mini/nozzle))
-		remove_noz(user)
-		return
-	..()
-
 /obj/item/weapon/watertank/atmos/make_noz()
 	return new /obj/item/weapon/extinguisher/mini/nozzle(src)
 
 /obj/item/weapon/watertank/atmos/dropped(mob/user as mob)
 	icon_state = "waterbackpackatmos"
-	var/obj/item/weapon/extinguisher/mini/nozzle/N = noz
-	N.nozzle_mode = 0
+	if(istype(noz, /obj/item/weapon/extinguisher/mini/nozzle))
+		var/obj/item/weapon/extinguisher/mini/nozzle/N = noz
+		N.nozzle_mode = 0
 
 /obj/item/weapon/extinguisher/mini/nozzle
 	name = "extinguisher nozzle"
 	desc = "A heavy duty nozzle attached to a firefighter's backpack tank."
-	icon = 'icons/obj/hydroponics.dmi'
+	icon = 'icons/obj/hydroponics/equipment.dmi'
 	icon_state = "atmos_nozzle"
 	item_state = "nozzleatmos"
 	safety = 0
@@ -282,7 +290,7 @@
 		if(!Adj|| !istype(target, /turf))
 			return
 		if(metal_synthesis_cooldown < 5)
-			var/obj/effect/effect/foam/F = new /obj/effect/effect/foam(get_turf(target), 1)
+			var/obj/effect/effect/foam/metal/F = new /obj/effect/effect/foam/metal(get_turf(target))
 			F.amount = 0
 			metal_synthesis_cooldown++
 			spawn(100)

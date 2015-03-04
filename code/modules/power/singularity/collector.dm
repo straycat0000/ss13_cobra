@@ -10,7 +10,7 @@ var/global/list/rad_collectors = list()
 	density = 1
 	req_access = list(access_engine_equip)
 //	use_power = 0
-	var/obj/item/weapon/tank/plasma/P = null
+	var/obj/item/weapon/tank/internals/plasma/P = null
 	var/last_power = 0
 	var/active = 0
 	var/locked = 0
@@ -51,13 +51,13 @@ var/global/list/rad_collectors = list()
 ..()
 
 
-/obj/machinery/power/rad_collector/attackby(obj/item/W, mob/user)
+/obj/machinery/power/rad_collector/attackby(obj/item/W, mob/user, params)
 	if(istype(W, /obj/item/device/multitool))
 		user << "<span class='notice'>The [W.name] detects that [last_power]W were recently produced.</span>"
 		return 1
 	else if(istype(W, /obj/item/device/analyzer) && P)
 		atmosanalyzer_scan(P.air_contents, user)
-	else if(istype(W, /obj/item/weapon/tank/plasma))
+	else if(istype(W, /obj/item/weapon/tank/internals/plasma))
 		if(!src.anchored)
 			user << "<span class='danger'>The [src] needs to be secured to the floor first.</span>"
 			return 1
@@ -97,7 +97,7 @@ var/global/list/rad_collectors = list()
 				user << "The controls are now [src.locked ? "locked." : "unlocked."]"
 			else
 				src.locked = 0 //just in case it somehow gets locked
-				user << "<span class='danger'>The controls can only be locked when the [src] is active.</span>"
+				user << "<span class='danger'>The controls can only be locked when \the [src] is active.</span>"
 		else
 			user << "<span class='danger'>Access denied!</span>"
 			return 1
@@ -106,7 +106,7 @@ var/global/list/rad_collectors = list()
 		return 1
 
 
-/obj/machinery/power/rad_collector/ex_act(severity)
+/obj/machinery/power/rad_collector/ex_act(severity, target)
 	switch(severity)
 		if(2, 3)
 			eject()
@@ -115,7 +115,7 @@ var/global/list/rad_collectors = list()
 
 /obj/machinery/power/rad_collector/proc/eject()
 	locked = 0
-	var/obj/item/weapon/tank/plasma/Z = src.P
+	var/obj/item/weapon/tank/internals/plasma/Z = src.P
 	if (!Z)
 		return
 	Z.loc = get_turf(src)

@@ -28,10 +28,6 @@
 	permeability_coefficient = 0.01
 	flags = NOSLIP
 	armor = list(melee = 80, bullet = 60, laser = 50, energy = 50, bomb = 50, bio = 30, rad = 30)
-	cold_protection = FEET
-	min_cold_protection_temperature = SHOES_MIN_TEMP_PROTECT
-	heat_protection = FEET
-	max_heat_protection_temperature = SHOES_MAX_TEMP_PROTECT
 
 /obj/item/clothing/shoes/space_ninja
 	name = "ninja shoes"
@@ -61,7 +57,7 @@
 	icon_state = "black"
 
 /obj/item/clothing/shoes/galoshes
-	desc = "Rubber boots"
+	desc = "A pair of yellow rubber boots, designed to prevent slipping on wet surfaces."
 	name = "galoshes"
 	icon_state = "galoshes"
 	permeability_coefficient = 0.05
@@ -95,13 +91,30 @@
 	strip_delay = 50
 	put_on_delay = 50
 
+/obj/item/clothing/shoes/winterboots
+	name = "winter boots"
+	desc = "Boots lined with 'synthetic' animal fur."
+	icon_state = "winterboots"
+	item_state = "winterboots"
+	cold_protection = FEET|LEGS
+	min_cold_protection_temperature = SHOES_MIN_TEMP_PROTECT
+	heat_protection = FEET|LEGS
+	max_heat_protection_temperature = SHOES_MAX_TEMP_PROTECT
+
+/obj/item/clothing/shoes/workboots
+	name = "work boots"
+	desc = "Nanotrasen-issue Engineering lace-up work boots for the especially blue-collar."
+	icon_state = "workboots"
+	item_state = "jackboots"
+	strip_delay = 40
+	put_on_delay = 40
+
 /obj/item/clothing/shoes/cult
-	name = "boots"
+	name = "cultist boots"
 	desc = "A pair of boots worn by the followers of Nar-Sie."
 	icon_state = "cult"
 	item_state = "cult"
 	item_color = "cult"
-
 	cold_protection = FEET
 	min_cold_protection_temperature = SHOES_MIN_TEMP_PROTECT
 	heat_protection = FEET
@@ -109,7 +122,7 @@
 
 /obj/item/clothing/shoes/cyborg
 	name = "cyborg boots"
-	desc = "Shoes for a cyborg costume"
+	desc = "Shoes for a cyborg costume."
 	icon_state = "boots"
 
 /obj/item/clothing/shoes/laceup
@@ -125,3 +138,9 @@
 	item_state = "roman"
 	strip_delay = 100
 	put_on_delay = 100
+
+/obj/item/clothing/shoes/griffin
+	name = "griffon boots"
+	desc = "A pair of costume boots fashioned after bird talons."
+	icon_state = "griffinboots"
+	item_state = "griffinboots"

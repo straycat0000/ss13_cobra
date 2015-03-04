@@ -7,7 +7,7 @@
 	status_flags = CANPUSH
 
 	var/icon_living = ""
-	var/icon_dead = ""
+	var/icon_dead = "" //icon when the animal is dead. Don't use animated icons for this.
 	var/icon_gib = null	//We only try to show a gibbing animation if this exists.
 
 	var/list/speak = list()
@@ -20,6 +20,7 @@
 	var/turns_since_move = 0
 	var/meat_amount = 0
 	var/meat_type
+	var/skin_type
 	var/stop_automated_movement = 0 //Use this to temporarely stop random movement or to if you write special movement code for animals.
 	var/wander = 1	// Does the mob wander around when idle?
 	var/stop_automated_movement_when_pulled = 1 //When set to 1 this stops the animal from moving when someone is pulling it.
@@ -84,6 +85,8 @@
 
 /mob/living/simple_animal/Life()
 
+	update_gravity(mob_has_gravity())
+
 	//Health
 	if(stat == DEAD)
 		if(health > 0)
@@ -108,6 +111,8 @@
 		AdjustWeakened(-1)
 	if(paralysis)
 		AdjustParalysis(-1)
+
+	adjustEarDamage((ear_damage < 25 ? -0.05 : 0), -1)
 
 	//Movement
 	if(!client && !stop_automated_movement && wander)
@@ -211,26 +216,14 @@
 		adjustBruteLoss(unsuitable_atmos_damage)
 	return 1
 
-/mob/living/simple_animal/Bumped(AM as mob|obj)
-	if(!AM) return
-
-	if(resting || buckled)
-		return
-
-	if(isturf(src.loc))
-		if((status_flags & CANPUSH) && ismob(AM))
-			var/newamloc = src.loc
-			src.loc = AM:loc
-			AM:loc = newamloc
-		else
-			..()
-
 /mob/living/simple_animal/gib(var/animation = 0)
 	if(icon_gib)
 		flick(icon_gib, src)
 	if(meat_amount && meat_type)
 		for(var/i = 0; i < meat_amount; i++)
 			new meat_type(src.loc)
+	if(skin_type)
+		new skin_type(src.loc)
 	..()
 
 
@@ -334,7 +327,7 @@
 		updatehealth()
 
 
-/mob/living/simple_animal/attackby(var/obj/item/O as obj, var/mob/living/user as mob) //Marker -Agouri
+/mob/living/simple_animal/attackby(var/obj/item/O as obj, var/mob/living/user as mob, params) //Marker -Agouri
 	if(O.flags & NOBLUDGEON)
 		return
 
@@ -359,8 +352,8 @@
 		else
 			user << "<span class='notice'> [src] is dead, medical items won't bring it back to life.</span>"
 			return
-	if(meat_type && (stat == DEAD))	//if the animal has a meat, and if it is dead.
-		if(istype(O, /obj/item/weapon/kitchenknife) || istype(O, /obj/item/weapon/butch))
+	if((meat_type || skin_type) && (stat == DEAD))	//if the animal has a meat, and if it is dead.
+		if(istype(O, /obj/item/weapon/kitchenknife))
 			harvest()
 
 	user.changeNext_move(CLICK_CD_MELEE)
@@ -371,8 +364,8 @@
 			damage = O.force
 			if (O.damtype == STAMINA)
 				damage = 0
-			visible_message("<span class='danger'>[src] has been [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] with [O] by [user]!</span>",\
-							"<span class='userdanger'>[src] has been attacked with [O] by [user]!</span>")
+			visible_message("<span class='danger'>[user] has [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] [src] with [O]!</span>",\
+							"<span class='userdanger'>[user] has [O.attack_verb.len ? "[pick(O.attack_verb)]": "attacked"] you with [O]!</span>")
 		else
 			visible_message("<span class='danger'>[O] bounces harmlessly off of [src].</span>",\
 							"<span class='userdanger'>[O] bounces harmlessly off of [src].</span>")
@@ -392,8 +385,8 @@
 /mob/living/simple_animal/Stat()
 	..()
 
-	statpanel("Status")
-	stat(null, "Health: [round((health / maxHealth) * 100)]%")
+	if(statpanel("Status"))
+		stat(null, "Health: [round((health / maxHealth) * 100)]%")
 
 /mob/living/simple_animal/proc/Die()
 	health = 0 // so /mob/living/simple_animal/Life() doesn't magically revive them
@@ -412,7 +405,7 @@
 
 	Die()
 
-/mob/living/simple_animal/ex_act(severity)
+/mob/living/simple_animal/ex_act(severity, target)
 	..()
 	switch (severity)
 		if (1.0)
@@ -471,7 +464,7 @@
 		else if(istype(M, childtype)) //Check for children FIRST.
 			children++
 		else if(istype(M, species))
-			if(M.client)
+			if(M.ckey)
 				continue
 			else if(!istype(M, childtype) && M.gender == MALE) //Better safe than sorry ;_;
 				partner = M

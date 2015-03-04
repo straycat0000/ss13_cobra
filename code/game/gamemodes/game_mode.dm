@@ -29,6 +29,9 @@
 	var/pre_setup_before_jobs = 0
 	var/antag_flag = null //preferences flag such as BE_WIZARD that need to be turned on for players to be antag
 	var/datum/mind/sacrifice_target = null
+	var/round_converted = 0
+	var/reroll_friendly 	//During mode conversion only these are in the running
+	var/enemy_minimum_age = 7 //How many days must players have been playing before they can play this antagonist
 
 	var/const/waittime_l = 600
 	var/const/waittime_h = 1800 // started at 1800
@@ -88,6 +91,59 @@
 /datum/game_mode/proc/make_antag_chance(var/mob/living/carbon/human/character)
 	return
 
+///convert_roundtype()
+///Allows rounds to basically be "rerolled" should the initial premise fall through
+/datum/game_mode/proc/convert_roundtype()
+	var/list/datum/game_mode/runnable_modes = config.get_runnable_modes()
+	for(var/datum/game_mode/G in runnable_modes)
+		if(!G.reroll_friendly)	del(G)
+
+	SSshuttle.emergencyNoEscape = 0 //Time to get the fuck out of here
+
+	if(!runnable_modes)	return 0
+
+	var/list/datum/game_mode/replacementmode = pickweight(runnable_modes)
+
+	switch(SSshuttle.emergency.mode) //Rounds on the verge of ending don't get new antags, they just run out
+		if(SHUTTLE_STRANDED, SHUTTLE_ESCAPE)
+			return 1
+		if(SHUTTLE_CALL)
+			if(SSshuttle.emergency.timeLeft(1) < initial(SSshuttle.emergencyCallTime)*0.5)
+				return 1
+
+	var/living_crew = 0
+
+	for(var/mob/Player in mob_list)
+		if(Player.mind && Player.stat != DEAD && !isnewplayer(Player) &&!isbrain(Player))
+			living_crew++
+	if(living_crew / joined_player_list.len <= 0.7) //If a lot of the player base died, we start fresh
+		return 0
+
+	var/list/antag_canadates = list()
+
+	for(var/mob/living/carbon/human/H in living_crew)
+		if(H.client && H.client.prefs.allow_midround_antag)
+			antag_canadates += H
+
+	if(!antag_canadates)
+		message_admins("The roundtype has been converted, antagonists may have been created")
+		return 1
+
+	antag_canadates = shuffle(antag_canadates)
+
+	if(config.protect_roles_from_antagonist)
+		replacementmode.restricted_jobs += replacementmode.protected_jobs
+	if(config.protect_assistant_from_antagonist)
+		replacementmode.restricted_jobs += "Assistant"
+
+	spawn(rand(1800,4200)) //somewhere between 3 and 7 minutes from now
+		for(var/mob/living/carbon/human/H in antag_canadates)
+			replacementmode.make_antag_chance(H)
+
+		message_admins("The roundtype has been converted, antagonists may have been created")
+
+	return 1
+
 ///process()
 ///Called by the gameticker
 /datum/game_mode/proc/process()
@@ -95,79 +151,13 @@
 
 
 /datum/game_mode/proc/check_finished() //to be called by ticker
-	if(emergency_shuttle.location==2 || station_was_nuked)
+	if(SSshuttle.emergency.mode >= SHUTTLE_ENDGAME || station_was_nuked)
 		return 1
 	return 0
 
 
 /datum/game_mode/proc/declare_completion()
-	var/clients = 0
-	var/surviving_humans = 0
-	var/surviving_total = 0
-	var/ghosts = 0
-	var/escaped_humans = 0
-	var/escaped_total = 0
-	var/escaped_on_pod_1 = 0
-	var/escaped_on_pod_2 = 0
-	var/escaped_on_pod_3 = 0
-	var/escaped_on_pod_5 = 0
-	var/escaped_on_shuttle = 0
-
-	var/list/area/escape_locations = list(/area/shuttle/escape/centcom, /area/shuttle/escape_pod1/centcom, /area/shuttle/escape_pod2/centcom, /area/shuttle/escape_pod3/centcom, /area/shuttle/escape_pod4/centcom)
-
-	for(var/mob/M in player_list)
-		if(M.client)
-			clients++
-			if(ishuman(M))
-				if(!M.stat)
-					surviving_humans++
-					if(M.loc && M.loc.loc && M.loc.loc.type in escape_locations)
-						escaped_humans++
-			if(!M.stat)
-				surviving_total++
-				if(M.loc && M.loc.loc && M.loc.loc.type in escape_locations)
-					escaped_total++
-
-				if(M.loc && M.loc.loc && M.loc.loc.type == /area/shuttle/escape/centcom)
-					escaped_on_shuttle++
-
-				if(M.loc && M.loc.loc && M.loc.loc.type == /area/shuttle/escape_pod1/centcom)
-					escaped_on_pod_1++
-				if(M.loc && M.loc.loc && M.loc.loc.type == /area/shuttle/escape_pod2/centcom)
-					escaped_on_pod_2++
-				if(M.loc && M.loc.loc && M.loc.loc.type == /area/shuttle/escape_pod3/centcom)
-					escaped_on_pod_3++
-				if(M.loc && M.loc.loc && M.loc.loc.type == /area/shuttle/escape_pod4/centcom)
-					escaped_on_pod_5++
-
-			if(isobserver(M))
-				ghosts++
-
-	if(clients > 0)
-		feedback_set("round_end_clients",clients)
-	if(ghosts > 0)
-		feedback_set("round_end_ghosts",ghosts)
-	if(surviving_humans > 0)
-		feedback_set("survived_human",surviving_humans)
-	if(surviving_total > 0)
-		feedback_set("survived_total",surviving_total)
-	if(escaped_humans > 0)
-		feedback_set("escaped_human",escaped_humans)
-	if(escaped_total > 0)
-		feedback_set("escaped_total",escaped_total)
-	if(escaped_on_shuttle > 0)
-		feedback_set("escaped_on_shuttle",escaped_on_shuttle)
-	if(escaped_on_pod_1 > 0)
-		feedback_set("escaped_on_pod_1",escaped_on_pod_1)
-	if(escaped_on_pod_2 > 0)
-		feedback_set("escaped_on_pod_2",escaped_on_pod_2)
-	if(escaped_on_pod_3 > 0)
-		feedback_set("escaped_on_pod_3",escaped_on_pod_3)
-	if(escaped_on_pod_5 > 0)
-		feedback_set("escaped_on_pod_5",escaped_on_pod_5)
-
 	send2irc("Server", "Round just ended.")
-
 	return 0
 
 
@@ -236,7 +226,8 @@
 		if(player.client && player.ready)
 			if(player.client.prefs.be_special & role)
 				if(!jobban_isbanned(player, "Syndicate") && !jobban_isbanned(player, roletext)) //Nodrak/Carn: Antag Job-bans
-					candidates += player.mind				// Get a list of all the people who want to be the antagonist for this round
+					if(age_check(player.client)) //Must be older than the minimum age
+						candidates += player.mind				// Get a list of all the people who want to be the antagonist for this round
 
 	if(restricted_jobs)
 		for(var/datum/mind/player in candidates)
@@ -402,3 +393,22 @@ proc/display_roundstart_logout_report()
 	text += ")"
 
 	return text
+
+//If the configuration option is set to require players to be logged as old enough to play certain jobs, then this proc checks that they are, otherwise it just returns 1
+/datum/game_mode/proc/age_check(client/C)
+	if(get_remaining_days(C) == 0)
+		return 1	//Available in 0 days = available right now = player is old enough to play.
+	return 0
+
+
+/datum/game_mode/proc/get_remaining_days(client/C)
+	if(!C)
+		return 0
+	if(!config.use_age_restriction_for_jobs)
+		return 0
+	if(!isnum(C.player_age))
+		return 0 //This is only a number if the db connection is established, otherwise it is text: "Requires database", meaning these restrictions cannot be enforced
+	if(!isnum(enemy_minimum_age))
+		return 0
+
+	return max(0, enemy_minimum_age - C.player_age)

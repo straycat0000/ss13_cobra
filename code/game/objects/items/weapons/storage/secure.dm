@@ -31,24 +31,21 @@
 	..()
 	user << text("The service panel is [src.open ? "open" : "closed"].")
 
-/obj/item/weapon/storage/secure/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/item/weapon/storage/secure/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(locked)
-		if ( (istype(W, /obj/item/weapon/card/emag)||istype(W, /obj/item/weapon/melee/energy/blade)) && (!src.emagged))
+		if (istype(W, /obj/item/weapon/melee/energy/blade) && !emagged)
 			emagged = 1
 			src.overlays += image('icons/obj/storage.dmi', icon_sparking)
 			sleep(6)
 			src.overlays = null
 			overlays += image('icons/obj/storage.dmi', icon_locking)
 			locked = 0
-			if(istype(W, /obj/item/weapon/melee/energy/blade))
-				var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread()
-				spark_system.set_up(5, 0, src.loc)
-				spark_system.start()
-				playsound(src.loc, 'sound/weapons/blade1.ogg', 50, 1)
-				playsound(src.loc, "sparks", 50, 1)
-				user << "You slice through the lock on [src]."
-			else
-				user << "You short out the lock on [src]."
+			var/datum/effect/effect/system/spark_spread/spark_system = new /datum/effect/effect/system/spark_spread()
+			spark_system.set_up(5, 0, src.loc)
+			spark_system.start()
+			playsound(src.loc, 'sound/weapons/blade1.ogg', 50, 1)
+			playsound(src.loc, "sparks", 50, 1)
+			user << "You slice through the lock on [src]."
 			return
 
 		if (istype(W, /obj/item/weapon/screwdriver))
@@ -79,6 +76,16 @@
 	// -> storage/attackby() what with handle insertion, etc
 	..()
 
+/obj/item/weapon/storage/secure/emag_act(mob/user as mob)
+	if(locked)
+		if(!emagged)
+			emagged = 1
+			src.overlays += image('icons/obj/storage.dmi', icon_sparking)
+			sleep(6)
+			src.overlays = null
+			overlays += image('icons/obj/storage.dmi', icon_locking)
+			locked = 0
+			user << "You short out the lock on [src]."
 
 /obj/item/weapon/storage/secure/MouseDrop(over_object, src_location, over_location)
 	if (locked)
@@ -161,9 +168,9 @@
 	attack_verb = list("bashed", "battered", "bludgeoned", "thrashed", "whacked")
 
 /obj/item/weapon/storage/secure/briefcase/New()
-	..()
 	new /obj/item/weapon/paper(src)
 	new /obj/item/weapon/pen(src)
+	return ..()
 
 /obj/item/weapon/storage/secure/briefcase/attack_hand(mob/user as mob)
 	if ((src.loc == user) && (src.locked == 1))
@@ -181,6 +188,16 @@
 		src.orient2hud(user)
 	src.add_fingerprint(user)
 	return
+
+//Syndie variant of Secure Briefcase. Contains space cash, slightly more robust.
+/obj/item/weapon/storage/secure/briefcase/syndie
+	force = 15.0
+
+/obj/item/weapon/storage/secure/briefcase/syndie/New()
+	for(var/i = 0, i < storage_slots - 2, i++)
+		new /obj/item/weapon/spacecash/c1000(src)
+	return ..()
+
 
 // -----------------------------
 //        Secure Safe

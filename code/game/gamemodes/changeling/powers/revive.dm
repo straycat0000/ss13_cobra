@@ -1,9 +1,9 @@
 /obj/effect/proc_holder/changeling/revive
-	name = "Regenerate"
+	name = "Revive"
 	desc = "We regenerate, healing all damage from our form."
 	req_stat = DEAD
 
-//Revive from regenerative stasis
+//Revive from revival stasis
 /obj/effect/proc_holder/changeling/revive/sting_action(var/mob/living/carbon/user)
 
 	if(user.stat == DEAD)
@@ -20,10 +20,15 @@
 	user.radiation = 0
 	user.heal_overall_damage(user.getBruteLoss(), user.getFireLoss())
 	user.reagents.clear_reagents()
+	if(ishuman(user))
+		var/mob/living/carbon/human/H = user
+		H.restore_blood()
 	user << "<span class='notice'>We have regenerated.</span>"
 
 	user.status_flags &= ~(FAKEDEATH)
 	user.update_canmove()
 	user.mind.changeling.purchasedpowers -= src
+	user.med_hud_set_status()
+	user.med_hud_set_health()
 	feedback_add_details("changeling_powers","CR")
 	return 1

@@ -142,7 +142,7 @@ FLOOR SAFES
 				updateUsrDialog()
 
 
-/obj/structure/safe/attackby(obj/item/I as obj, mob/user as mob)
+/obj/structure/safe/attackby(obj/item/I as obj, mob/user as mob, params)
 	if(open)
 		if(I.w_class + space <= maxspace)
 			space += I.w_class
@@ -165,7 +165,7 @@ FLOOR SAFES
 obj/structure/safe/blob_act()
 	return
 
-obj/structure/safe/ex_act(severity)
+obj/structure/safe/ex_act(severity, target)
 	return
 
 

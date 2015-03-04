@@ -18,6 +18,10 @@
 	var/mob/affecting = null
 	var/deity_name = "Christ"
 
+/obj/item/weapon/storage/book/bible/suicide_act(mob/user)
+	user.visible_message("<span class='suicide'>[user] is offering \himself to [src.deity_name]! It looks like \he's trying to commit suicide.</span>")
+	return (BRUTELOSS)
+
 /obj/item/weapon/storage/book/bible/booze
 	name = "bible"
 	desc = "To be applied to the head repeatedly."
@@ -44,7 +48,7 @@
 					H.update_damage_overlays(0)
 	return
 
-/obj/item/weapon/storage/book/bible/attack(mob/living/M as mob, mob/living/user as mob)
+/obj/item/weapon/storage/book/bible/attack(mob/living/M as mob, mob/living/carbon/human/user as mob)
 
 	var/chaplain = 0
 	if(user.mind && (user.mind.assigned_role == "Chaplain"))
@@ -60,7 +64,7 @@
 		user.take_organ_damage(0,10)
 		return
 
-	if ((CLUMSY in user.mutations) && prob(50))
+	if (user.disabilities & CLUMSY && prob(50))
 		user << "<span class='danger'>The [src] slips out of your hand and hits your head.</span>"
 		user.take_organ_damage(10)
 		user.Paralyse(20)
@@ -85,13 +89,12 @@
 				for(var/obj/item/organ/limb/affecting in H.organs)
 					if(affecting.status == ORGAN_ORGANIC)
 						if(message_halt == 0)
-							for(var/mob/O in viewers(M, null))
-								O.show_message(text("<span class='userdanger'>[] heals [] with the power of [src.deity_name]!</span>", user, M), 1)
-							M << "<span class='danger'>May the power of [src.deity_name] compel you to be healed!</span>"
+							M.visible_message("<span class='notice'>[user] heals [M] with the power of [src.deity_name]!</span>")
+							M << "<span class='boldnotice'>May the power of [src.deity_name] compel you to be healed!</span>"
 							playsound(src.loc, "punch", 25, 1, -1)
 							message_halt = 1
 					else
-						src << "<span class='warning'>[src.deity_name] refuses to heal this metallic taint!</span>"
+						user << "<span class='warning'>[src.deity_name] refuses to heal this metallic taint!</span>"
 						return
 
 
@@ -101,18 +104,18 @@
 			if(ishuman(M) && !istype(M:head, /obj/item/clothing/head/helmet))
 				M.adjustBrainLoss(10)
 				M << "<span class='danger'>You feel dumber.</span>"
-			for(var/mob/O in viewers(M, null))
-				O.show_message(text("<span class='danger'>[user] beats [M] over the head with [src]!</span>"), 1)
+			M.visible_message("<span class='danger'>[user] beats [M] over the head with [src]!</span>", \
+					"<span class='userdanger'>[user] beats [M] over the head with [src]!</span>")
 			playsound(src.loc, "punch", 25, 1, -1)
 
 	else if(M.stat == 2)
-		for(var/mob/O in viewers(M, null))
-			O.show_message(text("<span class='danger'>[user] smacks [M]'s lifeless corpse with [src].</span>"), 1)
+		M.visible_message("<span class='danger'>[user] smacks [M]'s lifeless corpse with [src].</span>")
 		playsound(src.loc, "punch", 25, 1, -1)
 	return
 
 /obj/item/weapon/storage/book/bible/afterattack(atom/A, mob/user as mob, proximity)
-	if(!proximity) return
+	if(!proximity)
+		return
 	if (istype(A, /turf/simulated/floor))
 		user << "<span class='notice'>You hit the floor with the bible.</span>"
 		if(user.mind && (user.mind.assigned_role == "Chaplain"))
@@ -129,6 +132,6 @@
 			A.reagents.del_reagent("unholywater")
 			A.reagents.add_reagent("holywater",unholy2clean)
 
-/obj/item/weapon/storage/book/bible/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/item/weapon/storage/book/bible/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	playsound(src.loc, "rustle", 50, 1, -5)
 	..()

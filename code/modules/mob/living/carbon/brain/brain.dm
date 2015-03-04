@@ -25,3 +25,20 @@
 
 /mob/living/carbon/brain/toggle_throw_mode()
 	return
+
+/mob/living/carbon/brain/ex_act() //you cant blow up brainmobs because it makes transfer_to() freak out when borgs blow up.
+	return
+
+/mob/living/carbon/brain/blob_act()
+	return
+
+/mob/living/carbon/brain/Move(var/atom/newloc)
+	if(container)
+		container.Move(newloc)
+	else //something went very wrong.
+		CRASH("Brainmob without container")
+	. = ..()
+	loc = container
+
+/mob/living/carbon/brain/UnarmedAttack(var/atom/A)//Stops runtimes due to attack_animal being the default
+	return

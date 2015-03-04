@@ -22,18 +22,20 @@
 /mob/living/silicon/ai/say_quote(var/text)
 	var/ending = copytext(text, length(text))
 
-	if (ending == "?")
-		return "queries, \"[text]\"";
-	else if (ending == "!")
+	if(ending == "?")
+		return "queries, \"<span class = 'robot'>[text]</span>\"";
+	else if(copytext(text, length(text) - 1) == "!!")
+		return "alarms, \"<span class = 'robot'><span class = 'yell'>[text]</span></span>\"";
+	else if(ending == "!")
 		return "declares, \"[text]\"";
 
-	return "states, \"[text]\"";
+	return "states, \"<span class = 'robot'>[text]</span>\"";
 
 /mob/living/silicon/ai/IsVocal()
 	return !config.silent_ai
 
 /mob/living/silicon/ai/radio(message, message_mode)
-	if(!radio_enabled || aiRestorePowerRoutine || stat) //AI cannot speak if radio is disabled (via intelicard) or depowered.
+	if(!radio_enabled || aiRestorePowerRoutine || stat) //AI cannot speak if radio is disabled (via intellicard) or depowered.
 		src << "<span class='danger'>Your radio transmitter is offline!</span>"
 		return 0
 	..(message,message_mode)
@@ -170,7 +172,7 @@ var/const/VOX_DELAY = 600
 		if(!only_listener)
 			// Play voice for all mobs in the z level
 			for(var/mob/M in player_list)
-				if(M.client)
+				if(M.client && !M.ear_deaf)
 					var/turf/T = get_turf(M)
 					if(T.z == z_level)
 						M << voice

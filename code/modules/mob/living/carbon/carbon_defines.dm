@@ -1,5 +1,6 @@
 /mob/living/carbon/
 	gender = MALE
+	hud_possible = list(HEALTH_HUD,STATUS_HUD,ANTAG_HUD)
 	var/list/stomach_contents	= list()
 	var/list/internal_organs	= list()	//List of /obj/item/organ in the mob. they don't go in the contents.
 
@@ -14,3 +15,8 @@
 	var/obj/item/weapon/tank/internal = null
 
 	var/datum/dna/dna = null//Carbon
+
+	var/failed_last_breath = 0 //This is used to determine if the mob failed a breath. If they did fail a brath, they will attempt to breathe each tick, otherwise just once per 4 ticks.
+
+	var/co2overloadtime = null
+	var/temperature_resistance = T0C+75

@@ -42,7 +42,7 @@
 
 /obj/item/device/camera_bug/New()
 	..()
-	processing_objects += src
+	SSobj.processing += src
 
 /obj/item/device/camera_bug/Destroy()
 	if(expansion)
@@ -71,7 +71,7 @@
 	interact(user)
 
 /obj/item/device/camera_bug/check_eye(var/mob/user as mob)
-	if (user.stat || loc != user || !user.canmove || user.blinded || !current)
+	if (user.stat || loc != user || !user.canmove || user.eye_blind || !current)
 		user.reset_view(null)
 		user.unset_machine()
 		return null
@@ -169,7 +169,7 @@
 	if(current && current.can_use())
 		var/list/seen = current.can_see()
 		var/list/names = list()
-		for(var/obj/machinery/singularity/S in seen) // god help you if you see more than one
+		for(var/obj/singularity/S in seen) // god help you if you see more than one
 			if(S.name in names)
 				names[S.name]++
 				dat += "[S.name] ([names[S.name]])"
@@ -308,7 +308,7 @@
 				break
 	src.updateSelfDialog()
 
-/obj/item/device/camera_bug/attackby(var/obj/item/W as obj,var/mob/living/user as mob)
+/obj/item/device/camera_bug/attackby(var/obj/item/W as obj,var/mob/living/user as mob, params)
 	if(istype(W,/obj/item/weapon/screwdriver) && expansion)
 		expansion.loc = get_turf(loc)
 		user << "You unscrew [expansion]."

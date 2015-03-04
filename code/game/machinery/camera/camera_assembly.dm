@@ -22,7 +22,7 @@
 				4 = Screwdriver panel closed and is fully built (you cannot attach upgrades)
 	*/
 
-/obj/item/weapon/camera_assembly/attackby(obj/item/W as obj, mob/living/user as mob)
+/obj/item/weapon/camera_assembly/attackby(obj/item/W as obj, mob/living/user as mob, params)
 
 	switch(state)
 
@@ -121,7 +121,7 @@
 
 	// Upgrades!
 	if(is_type_in_list(W, possible_upgrades) && !is_type_in_list(W, upgrades)) // Is a possible upgrade and isn't in the camera already.
-		user << "You attach the [W] into the assembly inner circuits."
+		user << "You attach \the [W] into the assembly inner circuits."
 		upgrades += W
 		user.drop_item()
 		W.loc = src
@@ -156,7 +156,7 @@
 	if(!WT.isOn())
 		return 0
 
-	user << "<span class='notice'>You start to weld the [src]..</span>"
+	user << "<span class='notice'>You start to weld \the [src]..</span>"
 	playsound(src.loc, 'sound/items/Welder.ogg', 50, 1)
 	WT.eyecheck(user)
 	busy = 1

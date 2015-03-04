@@ -18,10 +18,11 @@
 	var/cuffsound = 'sound/weapons/handcuffs.ogg'
 	var/trashtype = null //for disposable cuffs
 
-/obj/item/weapon/restraints/handcuffs/attack(mob/living/carbon/C, mob/user)
-	if(CLUMSY in user.mutations && prob(50))
+/obj/item/weapon/restraints/handcuffs/attack(mob/living/carbon/C, mob/living/carbon/human/user)
+	if(user.disabilities & CLUMSY && prob(50))
 		user << "<span class='warning'>Uh... how do those things work?!</span>"
 		apply_cuffs(user,user)
+		return
 
 	if(!C.handcuffed)
 		C.visible_message("<span class='danger'>[user] is trying to put [src.name] on [C]!</span>", \
@@ -30,12 +31,15 @@
 		playsound(loc, cuffsound, 30, 1, -2)
 		if(do_mob(user, C, 30))
 			apply_cuffs(C,user)
+			user << "<span class='notice'>You handcuff [C].</span>"
 			if(istype(src, /obj/item/weapon/restraints/handcuffs/cable))
 				feedback_add_details("handcuffs","C")
 			else
 				feedback_add_details("handcuffs","H")
 
 			add_logs(user, C, "handcuffed")
+		else
+			user << "<span class='warning'>You fail to handcuff [C].</span>"
 
 /obj/item/weapon/restraints/handcuffs/proc/apply_cuffs(mob/living/carbon/target, mob/user)
 	if(!target.handcuffed)
@@ -82,7 +86,7 @@
 /obj/item/weapon/restraints/handcuffs/cable/white
 	icon_state = "cuff_white"
 
-/obj/item/weapon/restraints/handcuffs/cable/attackby(var/obj/item/I, mob/user as mob)
+/obj/item/weapon/restraints/handcuffs/cable/attackby(var/obj/item/I, mob/user as mob, params)
 	..()
 	if(istype(I, /obj/item/stack/rods))
 		var/obj/item/stack/rods/R = I
@@ -106,13 +110,15 @@
 				if(!C.handcuffed)
 					C.handcuffed = new /obj/item/weapon/restraints/handcuffs/cable/zipties/used(C)
 					C.update_inv_handcuffed(0)
+					user << "<span class='notice'>You handcuff [C].</span>"
 					add_logs(user, C, "handcuffed")
+			else
+				user << "<span class='warning'>You fail to handcuff [C].</span>"
 
 /obj/item/weapon/restraints/handcuffs/cable/zipties
 	name = "zipties"
 	desc = "Plastic, disposable zipties that can be used to restrain temporarily but are destroyed after use."
 	icon_state = "cuff_white"
-	item_state = "coil_white"
 	breakouttime = 450 //Deciseconds = 45s
 	trashtype = /obj/item/weapon/restraints/handcuffs/cable/zipties/used
 
@@ -148,7 +154,8 @@
 	var/armed = 0
 
 /obj/item/weapon/restraints/legcuffs/beartrap/suicide_act(mob/user)
-	user.visible_message("<span class='suicide'>[user] is putting the [src.name] on \his head! It looks like \he's trying to commit suicide.</span>")
+	user.visible_message("<span class='suicide'>[user] is sticking \his head in the [src.name]! It looks like \he's trying to commit suicide.</span>")
+	playsound(loc, 'sound/weapons/bladeslice.ogg', 50, 1, -1)
 	return (BRUTELOSS)
 
 /obj/item/weapon/restraints/legcuffs/beartrap/attack_self(mob/user as mob)

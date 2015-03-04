@@ -13,6 +13,7 @@ var/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","Epsilon"
 	required_players = 15
 	required_enemies = 1
 	recommended_enemies = 4
+	reroll_friendly = 1
 
 
 	var/const/prob_int_murder_target = 50 // intercept names the assassination target half the time
@@ -86,8 +87,9 @@ var/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","Epsilon"
 	if(changelings.len <= (changelingcap - 2) || prob(100 - (config.changeling_scaling_coeff*2)))
 		if(character.client.prefs.be_special & BE_CHANGELING)
 			if(!jobban_isbanned(character.client, "changeling") && !jobban_isbanned(character.client, "Syndicate"))
-				if(!(character.job in ticker.mode.restricted_jobs))
-					character.mind.make_Changling()
+				if(age_check(character.client))
+					if(!(character.job in ticker.mode.restricted_jobs))
+						character.mind.make_Changling()
 	..()
 
 /datum/game_mode/proc/forge_changeling_objectives(var/datum/mind/changeling)
@@ -157,9 +159,10 @@ var/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","Epsilon"
 	changeling.current << "<b>You must complete the following tasks:</b>"
 
 	if (changeling.current.mind)
-		if (changeling.current.mind.assigned_role == "Clown")
-			changeling.current << "You have evolved beyond your clownish nature, allowing you to wield weapons without harming yourself."
-			changeling.current.mutations.Remove(CLUMSY)
+		var/mob/living/carbon/human/H = changeling.current
+		if(H.mind.assigned_role == "Clown")
+			H << "You have evolved beyond your clownish nature, allowing you to wield weapons without harming yourself."
+			H.dna.remove_mutation(CLOWNMUT)
 
 	var/obj_count = 1
 	for(var/datum/objective/objective in changeling.objectives)
@@ -285,7 +288,7 @@ var/list/possible_changeling_IDs = list("Alpha","Beta","Gamma","Delta","Epsilon"
 		return
 	if(!target)
 		return
-	if((NOCLONE in target.mutations) || (HUSK in target.mutations))
+	if((target.disabilities & NOCLONE) || (target.disabilities & HUSK))
 		user << "<span class='warning'>DNA of [target] is ruined beyond usability!</span>"
 		return
 	if(!ishuman(target))//Absorbing monkeys is entirely possible, but it can cause issues with transforming. That's what lesser form is for anyway!

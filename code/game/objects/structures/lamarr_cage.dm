@@ -10,7 +10,7 @@
 	var/occupied = 1
 	var/destroyed = 0
 
-/obj/structure/lamarr/ex_act(severity)
+/obj/structure/lamarr/ex_act(severity, target)
 	switch(severity)
 		if (1)
 			new /obj/item/weapon/shard( src.loc )
@@ -60,7 +60,7 @@
 	return
 
 
-/obj/structure/lamarr/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/structure/lamarr/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	user.changeNext_move(CLICK_CD_MELEE)
 	src.health -= W.force
 	src.healthcheck()

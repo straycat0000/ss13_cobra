@@ -5,43 +5,31 @@
 	icon_state = "blank"
 	flags = CONDUCT
 	slot_flags = SLOT_BELT
-	var/construction_time = 100
-	var/list/construction_cost = list("metal"=20000,"glass"=5000)
 
 /obj/item/robot_parts/l_arm
 	name = "cyborg left arm"
 	desc = "A skeletal limb wrapped in pseudomuscles, with a low-conductivity case."
 	icon_state = "l_arm"
-	construction_time = 200
-	construction_cost = list("metal"=10000)
 
 /obj/item/robot_parts/r_arm
 	name = "cyborg right arm"
 	desc = "A skeletal limb wrapped in pseudomuscles, with a low-conductivity case."
 	icon_state = "r_arm"
-	construction_time = 200
-	construction_cost = list("metal"=10000)
 
 /obj/item/robot_parts/l_leg
 	name = "cyborg left leg"
 	desc = "A skeletal limb wrapped in pseudomuscles, with a low-conductivity case."
 	icon_state = "l_leg"
-	construction_time = 200
-	construction_cost = list("metal"=10000)
 
 /obj/item/robot_parts/r_leg
 	name = "cyborg right leg"
 	desc = "A skeletal limb wrapped in pseudomuscles, with a low-conductivity case."
 	icon_state = "r_leg"
-	construction_time = 200
-	construction_cost = list("metal"=10000)
 
 /obj/item/robot_parts/chest
 	name = "cyborg torso"
 	desc = "A heavily reinforced case containing cyborg logic boards, with space for a standard power cell."
 	icon_state = "chest"
-	construction_time = 350
-	construction_cost = list("metal"=40000)
 	var/wires = 0.0
 	var/obj/item/weapon/stock_parts/cell/cell = null
 
@@ -49,8 +37,6 @@
 	name = "cyborg head"
 	desc = "A standard reinforced braincase, with spine-plugged neural socket and sensor gimbals."
 	icon_state = "head"
-	construction_time = 350
-	construction_cost = list("metal"=5000)
 	var/obj/item/device/flash/handheld/flash1 = null
 	var/obj/item/device/flash/handheld/flash2 = null
 
@@ -58,8 +44,6 @@
 	name = "cyborg endoskeleton"
 	desc = "A complex metal backbone with standard limb sockets and pseudomuscle anchors."
 	icon_state = "robo_suit"
-	construction_time = 500
-	construction_cost = list("metal"=15000)
 	var/obj/item/robot_parts/l_arm/l_arm = null
 	var/obj/item/robot_parts/r_arm/r_arm = null
 	var/obj/item/robot_parts/l_leg/l_leg = null
@@ -101,7 +85,7 @@
 				return 1
 	return 0
 
-/obj/item/robot_parts/robot_suit/attackby(obj/item/W as obj, mob/user as mob)
+/obj/item/robot_parts/robot_suit/attackby(obj/item/W as obj, mob/user as mob, params)
 	..()
 	if(istype(W, /obj/item/stack/sheet/metal) && !l_arm && !r_arm && !l_leg && !r_leg && !chest && !head)
 		var/obj/item/stack/sheet/metal/M = W
@@ -306,7 +290,7 @@
 	Interact(usr)
 	return
 
-/obj/item/robot_parts/chest/attackby(obj/item/W as obj, mob/user as mob)
+/obj/item/robot_parts/chest/attackby(obj/item/W as obj, mob/user as mob, params)
 	..()
 	if(istype(W, /obj/item/weapon/stock_parts/cell))
 		if(src.cell)
@@ -329,7 +313,7 @@
 			user << "<span class='warning'>You need one length of coil to wire it.</span>"
 	return
 
-/obj/item/robot_parts/head/attackby(obj/item/W as obj, mob/user as mob)
+/obj/item/robot_parts/head/attackby(obj/item/W as obj, mob/user as mob, params)
 	..()
 	if(istype(W, /obj/item/device/flash/handheld))
 		var/obj/item/device/flash/handheld/F = W

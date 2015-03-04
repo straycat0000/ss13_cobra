@@ -2,6 +2,8 @@
 	name = "item"
 	icon = 'icons/obj/items.dmi'
 	var/item_state = null
+	var/lefthand_file = 'icons/mob/inhands/items_lefthand.dmi'
+	var/righthand_file = 'icons/mob/inhands/items_righthand.dmi'
 	var/hitsound = null
 	var/throwhitsound = null
 	var/w_class = 3.0
@@ -42,6 +44,29 @@
 	var/list/attack_verb = list() //Used in attackby() to say how something was attacked "[x] has been [z.attack_verb] by [y] with [z]"
 	var/list/species_exception = list()	// even if a species cannot put items in a certain slot, if the species id is in the item's exception list, it will be able to wear that item
 
+	var/suittoggled = 0
+	var/hooded = 0
+
+	//So items can have custom embedd values
+	var/embed_chance = EMBED_CHANCE
+	var/embedded_fall_chance = EMBEDDED_ITEM_FALLOUT
+	var/embedded_pain_chance = EMBEDDED_PAIN_CHANCE
+
+	var/list/can_be_placed_into = list(
+		/obj/structure/table,
+		/obj/structure/rack,
+		/obj/structure/closet,
+		/obj/item/weapon/storage,
+		/obj/structure/safe,
+		/obj/machinery/disposal
+	)
+/obj/item/proc/check_allowed_items(atom/target, not_inside)
+	if((src in target) || ((!istype(target.loc, /turf)) && (!istype(target, /turf)) && (not_inside)) || is_type_in_list(target, can_be_placed_into))
+		return 0
+	else
+		return 1
+
+
 /obj/item/device
 	icon = 'icons/obj/device.dmi'
 
@@ -51,24 +76,14 @@
 		m.unEquip(src, 1)
 	return ..()
 
-/obj/item/ex_act(severity)
-	switch(severity)
-		if(1.0)
-			qdel(src)
-			return
-		if(2.0)
-			if (prob(50))
-				qdel(src)
-				return
-		if(3.0)
-			if (prob(5))
-				qdel(src)
-				return
-		else
-	return
-
 /obj/item/blob_act()
 	qdel(src)
+
+/obj/item/ex_act(severity, target)
+	if(severity == 1 || target == src)
+		qdel(src)
+	if(!gc_destroyed)
+		contents_explosion(severity, target)
 
 //user: The mob that is suiciding
 //damagetype: The type of damage the item will inflict on the user
@@ -126,7 +141,7 @@
 	if (istype(src.loc, /obj/item/weapon/storage))
 		//If the item is in a storage item, take it out
 		var/obj/item/weapon/storage/S = src.loc
-		S.remove_from_storage(src)
+		S.remove_from_storage(src, user.loc)
 
 	src.throwing = 0
 	if (loc == user)
@@ -181,7 +196,7 @@
 
 // Due to storage type consolidation this should get used more now.
 // I have cleaned it up a little, but it could probably use more.  -Sayu
-/obj/item/attackby(obj/item/weapon/W as obj, mob/user as mob)
+/obj/item/attackby(obj/item/weapon/W as obj, mob/user as mob, params)
 	if(istype(W,/obj/item/weapon/storage))
 		var/obj/item/weapon/storage/S = W
 		if(S.use_to_pickup)
@@ -219,9 +234,6 @@
 // afterattack() and attack() prototypes moved to _onclick/item_attack.dm for consistency
 
 /obj/item/proc/talk_into(mob/M as mob, text)
-	return
-
-/obj/item/proc/moved(mob/user as mob, old_loc as turf)
 	return
 
 /obj/item/proc/dropped(mob/user as mob)
@@ -323,16 +335,9 @@
 	add_logs(user, M, "attacked", object="[src.name]", addition="(INTENT: [uppertext(user.a_intent)])")
 
 	src.add_fingerprint(user)
-	//if((CLUMSY in user.mutations) && prob(50))
-	//	M = user
-		/*
-		M << "\red You stab yourself in the eye."
-		M.sdisabilities |= BLIND
-		M.weakened += 4
-		M.adjustBruteLoss(10)
-		*/
+
 	if(M != user)
-		M.visible_message("<span class='danger'>[M] has been stabbed in the eye with [src] by [user]!</span>", \
+		M.visible_message("<span class='danger'>[user] has stabbed [M] in the eye with [src]!</span>", \
 							"<span class='userdanger'>[user] stabs you in the eye with [src]!</span>")
 	else
 		user.visible_message( \
@@ -351,7 +356,7 @@
 	M.eye_stat += rand(2,4)
 	if (M.eye_stat >= 10)
 		M.eye_blurry += 15+(0.1*M.eye_blurry)
-		M.disabilities |= NEARSIGHTED
+		M.disabilities |= NEARSIGHT
 		if(M.stat != 2)
 			M << "<span class='danger'>Your eyes start to bleed profusely!</span>"
 		if(prob(50))
@@ -364,7 +369,7 @@
 		if (prob(M.eye_stat - 10 + 1))
 			if(M.stat != 2)
 				M << "<span class='danger'>You go blind!</span>"
-			M.sdisabilities |= BLIND
+			M.disabilities |= BLIND
 	return
 
 /obj/item/clean_blood()
@@ -396,14 +401,32 @@
 			break
 	if(.)
 		var/turf/T = get_turf(src)
-		T.visible_message("<span class='danger'>[src] melts away!</span>")
-		var/obj/effect/decal/cleanable/molten_item/I = new (get_turf(src))
-		I.pixel_x = rand(1,16)
-		I.pixel_y = rand(1,16)
-		I.desc = "Looks like this was \an [src] some time ago."
+		if(T)
+			T.visible_message("<span class='danger'>[src] melts away!</span>")
+			var/obj/effect/decal/cleanable/molten_item/I = new (T)
+			I.pixel_x = rand(-16,16)
+			I.pixel_y = rand(-16,16)
+			I.desc = "Looks like this was \an [src] some time ago."
 		qdel(src)
 	else
 		for(var/armour_value in armor) //but is weakened
 			armor[armour_value] = max(armor[armour_value]-acidpwr,0)
 		if(!findtext(desc, "it looks slightly melted...")) //it looks slightly melted... it looks slightly melted... it looks slightly melted... etc.
 			desc += " it looks slightly melted..." //needs a space at the start, formatting
+
+
+
+/obj/item/throw_impact(A)
+	if(istype(A, /mob/living/carbon/human))
+		var/mob/living/carbon/human/H = A
+		if(can_embed(src))
+			if(prob(embed_chance))
+				var/obj/item/organ/limb/L = pick(H.organs)
+				L.embedded_objects |= src
+				add_blood(H)//it embedded itself in you, of course it's bloody!
+				loc = H
+				L.take_damage(w_class*5)
+				H.visible_message("<span class='danger'>\the [name] embeds itself in [H]'s [L.getDisplayName()]!</span>","<span class='userdanger'>\the [name] embeds itself in your [L.getDisplayName()]!</span>")
+				return
+
+	..()

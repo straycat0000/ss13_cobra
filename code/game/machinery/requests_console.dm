@@ -282,6 +282,8 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 		if(!announcementConsole)	return
 		minor_announce(message, "[department] Announcement:")
 		news_network.SubmitArticle(message, department, "Station Announcements", null)
+		log_say("[key_name(usr)] has made a station announcement: [message]")
+		message_admins("[key_name_admin(usr)] has made a station announcement.")
 		announceAuth = 0
 		message = ""
 		screen = 0
@@ -431,7 +433,7 @@ var/list/obj/machinery/requests_console/allConsoles = list()
 				slip.name = "Message - [unlinkedsender]"
 	src.luminosity = 2
 
-/obj/machinery/requests_console/attackby(var/obj/item/weapon/O as obj, var/mob/user as mob)
+/obj/machinery/requests_console/attackby(var/obj/item/weapon/O as obj, var/mob/user as mob, params)
 	if (istype(O, /obj/item/weapon/crowbar))
 		if(open)
 			user << "You close the maintenance panel."
