@@ -104,6 +104,29 @@ proc/process_ghost_teleport_locs()
 
 /*-----------------------------------------------------------------------------*/
 
+// cobra
+
+
+/area/cobra/generic
+	name = "\improper Cobra Generic Area"
+	icon_state = "hallA"
+	has_gravity = 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*-----------------------------------------------------------------------------*/
+
 /area/engine/
 
 /area/turret_protected/
@@ -1483,6 +1506,7 @@ proc/process_ghost_teleport_locs()
 
 
 
+
 // Telecommunications Satellite
 
 /area/tcommsat
@@ -1809,4 +1833,5 @@ var/list/the_station_areas = list (
 	/area/turret_protected/ai_upload, //do not try to simplify to "/area/turret_protected" --rastaf0
 	/area/turret_protected/ai_upload_foyer,
 	/area/turret_protected/ai,
+	/area/cobra,
 )
